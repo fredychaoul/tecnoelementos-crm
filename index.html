@@ -1184,14 +1184,24 @@ async function sheetsRequest(payload) {
   }
 }
 
+function sanitizarCotizacion(c) {
+  // Asegurar que todos los campos críticos tengan el tipo correcto
+  return {
+    ...c,
+    folio:       c.folio ? (isNaN(Number(c.folio)) ? parseFolio(c.folio) : Number(c.folio)) : 0,
+    productos:   Array.isArray(c.productos)   ? c.productos   : [],
+    instalacion: Array.isArray(c.instalacion) ? c.instalacion : [],
+    total:       parseFloat(c.total) || 0,
+    status:      c.status || c.estatus || 'Pendiente',
+    moneda:      c.moneda || 'USD',
+    simbolo:     c.simbolo || (c.moneda === 'MXN' ? '$' : 'USD '),
+    tc:          parseFloat(c.tc) || 17.5
+  };
+}
+
 async function getCotizaciones() {
   const lista = await storageGet('cotizaciones') || [];
-  // Sanitizar: asegurar que productos e instalacion siempre sean arrays
-  return lista.map(c => ({
-    ...c,
-    productos:   Array.isArray(c.productos)   ? c.productos   : [],
-    instalacion: Array.isArray(c.instalacion) ? c.instalacion : []
-  }));
+  return lista.map(sanitizarCotizacion);
 }
 
 async function sincronizarDesdeSheets() {
@@ -1210,11 +1220,13 @@ async function sincronizarDesdeSheets() {
   return await storageGet('cotizaciones') || [];
 }
 
-async function saveCotizaciones(list) {
-  // Guardar en local siempre
-  await storageSet('cotizaciones', list);
+async function saveCotizaciones(list, skipSheets = false) {
+  // Sanitizar antes de guardar
+  const sanitized = list.map(sanitizarCotizacion);
+  await storageSet('cotizaciones', sanitized);
+  if (skipSheets) return;
   // Sincronizar cada cotización en Sheets
-  for (const c of list) {
+  for (const c of sanitized) {
     const payload = {
       action:      'save',
       perfil:      'B2B',
@@ -1247,10 +1259,17 @@ let currentFolio = 244;
 let modalCotizacion = null;
 
 async function init() {
-  // Primero sincronizar cotizaciones desde Sheets para tener el folio correcto
+  // 1. Intentar recuperar cotizaciones del Sheets (silencioso si falla)
   await recoverCotizacionesFromSheets();
+  // 2. Calcular folio correcto basado en todas las cotizaciones
   currentFolio = await getNextFolio();
   document.getElementById('folio-display').textContent = 'TEC-' + String(currentFolio).padStart(4,'0');
+  // 3. Limpiar borradores con folio string 'BORRADOR'
+  const lista = await getCotizaciones();
+  const sinBorradores = lista.filter(c => c.folio > 0);
+  if (sinBorradores.length < lista.length) {
+    await saveCotizaciones(sinBorradores, true);
+  }
   agregarProducto();
   actualizarAvisoInstalacion();
 }
@@ -1293,7 +1312,7 @@ async function recoverCotizacionesFromSheets() {
     
     if (nuevas.length > 0) {
       const merged = [...local, ...nuevas].sort((a,b) => parseFolio(b.folio) - parseFolio(a.folio));
-      await storageSet('cotizaciones', merged); // guardar directo sin re-enviar a Sheets
+      await saveCotizaciones(merged, true); // skipSheets=true para no re-enviar
       console.log('✅ Sheets sincronizado:', nuevas.length, 'nuevas + ', local.length, 'locales');
     }
   } catch(e) {
