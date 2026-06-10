@@ -386,7 +386,10 @@
       </div>
       <div class="form-group">
         <label>Tipo de Cambio (USD→MXN)</label>
-        <input type="number" id="tipo-cambio" value="17.50" step="0.01" oninput="recalcular()">
+        <div style="display:flex;gap:6px;align-items:center;">
+              <input type="number" id="tipo-cambio" value="17.50" step="0.01" oninput="recalcular()" style="flex:1;">
+              <button onclick="actualizarTC()" title="Obtener TC actual de Banxico" style="background:#1a73e8;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;white-space:nowrap;">🔄 TC</button>
+            </div>
       </div>
     </div>
     <div class="form-group" style="margin-top:16px">
@@ -594,6 +597,7 @@
       </div>
       <button class="btn btn-outline btn-sm" onclick="cerrarModal()">Cerrar</button>
       <button class="btn btn-sm" id="btn-editar-cot" style="background:#E8C96B;color:#1A1A1A;border:none;font-weight:700" onclick="editarCotizacion()">✏️ Editar</button>
+      <button class="btn btn-sm" style="background:#4A90D9;color:#fff;border:none;font-weight:700" onclick="duplicarCotizacion()">📋 Duplicar</button>
       <button class="btn btn-dark btn-sm" onclick="regenerarPDF()">📄 Regenerar PDF</button>
       <button class="btn btn-sm" onclick="generarOC(modalCotizacion)" style="background:#E8943A;color:#fff;border:none;">📦 Generar OC</button>
     </div>
@@ -2431,6 +2435,12 @@ async function generarPDF(cotData) {
   doc.text('TECNOELEMENTOS  |  Tel: 55 5509 6659', pw/2, ph-12, {align:'center'});
   doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(170,170,170);
   doc.text('Pisos de Madera de Ingeniería  ·  Pisos SPC  ·  Cerámicos Decorativos  ·  Deck', pw/2, ph-6, {align:'center'});
+  // Vigencia
+  const fechaVigObj = new Date();
+  fechaVigObj.setDate(fechaVigObj.getDate() + 15);
+  const fechaVigStr = fechaVigObj.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'});
+  doc.setFontSize(7); doc.setTextColor(130,130,130);
+  doc.text('Cotización válida por 15 días — vence el ' + fechaVigStr, pw/2, ph-3, {align:'center'});
 
   const nombreCliente = datos.cliente.replace(/\s+/g,'-');
   const nombreProyecto = datos.proyecto ? '-' + datos.proyecto.replace(/\s+/g,'-') : '';
@@ -2516,6 +2526,59 @@ async function descartarBorrador(tr) {
   await saveCotizaciones(nueva);
   mostrarToast('Borrador descartado', 'info');
   renderCRM();
+}
+
+async function duplicarCotizacion() {
+  if (!modalCotizacion) return;
+  const cot = modalCotizacion;
+  // Cerrar modal
+  document.getElementById('modal-cotizacion').style.display = 'none';
+  // Limpiar formulario y cargar datos de la cotización sin folio
+  limpiarFormulario();
+  // Cargar datos del cliente
+  document.getElementById('cli-nombre').value = cot.cliente || '';
+  document.getElementById('cli-ciudad').value  = cot.ciudad  || '';
+  document.getElementById('cli-proyecto').value = cot.proyecto || '';
+  document.getElementById('cli-dir').value      = cot.direccion || '';
+  document.getElementById('moneda').value       = cot.moneda || 'USD';
+  document.getElementById('tipo-cambio').value  = cot.tc    || 17.5;
+  if (cot.observaciones) document.getElementById('observaciones').value = cot.observaciones;
+  // Cargar productos
+  document.getElementById('productos-body').innerHTML = '';
+  filaCount = 0;
+  for (const p of (cot.productos || [])) {
+    await agregarProductoDesdeObj(p);
+  }
+  recalcular();
+  mostrarToast('📋 Cotización duplicada — modifica y guarda como nueva', 'info');
+  showPage('cotizacion');
+}
+
+async function agregarProductoDesdeObj(p) {
+  filaCount++;
+  const id = 'fila-' + filaCount;
+  agregarProducto();
+  await new Promise(r => setTimeout(r, 50));
+  // Buscar la línea y modelo
+  const selLinea = document.getElementById(id + '-linea');
+  const selProd  = document.getElementById(id + '-prod');
+  if (selLinea && p.linea) {
+    selLinea.value = p.linea;
+    filtrarModelos(id);
+    await new Promise(r => setTimeout(r, 50));
+  }
+  if (selProd && p.nombre) {
+    for (const opt of selProd.options) {
+      if (opt.value === p.nombre) { selProd.value = p.nombre; break; }
+    }
+    autoFill(id);
+    await new Promise(r => setTimeout(r, 50));
+  }
+  const cantEl = document.getElementById(id + '-cant');
+  if (cantEl) { cantEl.value = p.cantidad || 1; actualizarCajas(id); }
+  const pvpEl = document.getElementById(id + '-pvp');
+  if (pvpEl) { pvpEl.value = p.pvp_final || p.pvp || 0; pvpEl.dataset.editadoManual = '1'; }
+  recalcular();
 }
 
 async function filtrarCRM() { renderCRM(); }
@@ -3160,6 +3223,38 @@ window.addEventListener('unhandledrejection', function(e) {
   if (div) { div.style.display='block'; div.textContent = '❌ Error async: ' + msg; }
 });
 init();
+function compartirWhatsApp() {
+  if (!modalCotizacion) return;
+  const c = modalCotizacion;
+  const folio   = 'TEC-' + String(c.folio).padStart(4,'0');
+  const simbolo = c.simbolo || (c.moneda === 'MXN' ? '$' : 'USD ');
+  const total   = Number(c.total).toLocaleString('es-MX', {minimumFractionDigits:2});
+  const prods   = (c.productos || []).map(p => `  • ${p.nombre} — ${p.cantidad} ${p.unidad||'m²'}`).join('\n');
+  const inst    = (c.instalacion || []).length > 0 ? `\n\n*Instalación incluida*` : '';
+  const msg = `*TECNOELEMENTOS*\n*Cotización ${folio}*\n\nCliente: ${c.cliente}${c.proyecto ? ' | ' + c.proyecto : ''}\n\n*Productos:*\n${prods}${inst}\n\n*Total: ${simbolo}${total} ${c.moneda}*\n\nVigencia: 15 días\nTel. 55 5509 6659`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+async function actualizarTC() {
+  const btn = document.querySelector('[onclick="actualizarTC()"]');
+  if (btn) btn.textContent = '⏳';
+  try {
+    // Usar exchangerate-api (gratuita, sin key)
+    const r = await fetch('https://open.er-api.com/v6/latest/USD');
+    const d = await r.json();
+    if (d && d.rates && d.rates.MXN) {
+      const tc = d.rates.MXN.toFixed(4);
+      document.getElementById('tipo-cambio').value = tc;
+      recalcular();
+      mostrarToast('✅ TC actualizado: $' + tc + ' MXN/USD', 'success');
+    }
+  } catch(e) {
+    mostrarToast('⚠️ No se pudo obtener el TC. Ingresa manualmente.', 'error');
+  } finally {
+    if (btn) btn.textContent = '🔄 TC';
+  }
+}
+
 </script>
 
 <!-- ═══════════════════ MODAL TODOIST ═══════════════════ -->
