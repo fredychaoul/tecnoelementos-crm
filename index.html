@@ -1140,14 +1140,30 @@ async function storageSet(key, val) {
 }
 
 async function getNextFolio() {
-  const data = await storageGet('folio') || { last: 243 };
-  return data.last + 1;
+  // Sincronizar con el folio más alto de las cotizaciones existentes
+  const lista = await getCotizaciones();
+  const folioStorage = (await storageGet('folio') || { last: 243 }).last;
+  const folioMaxCots = lista.reduce((max, c) => {
+    const n = parseInt(c.folio);
+    return !isNaN(n) && n > max ? n : max;
+  }, 0);
+  const folioMax = Math.max(folioStorage, folioMaxCots, 243);
+  // Actualizar storage si el máximo de cots es mayor
+  if (folioMaxCots > folioStorage) {
+    await storageSet('folio', { last: folioMaxCots });
+  }
+  return folioMax + 1;
 }
 async function incrementFolio() {
-  const data = await storageGet('folio') || { last: 243 };
-  data.last += 1;
-  await storageSet('folio', data);
-  return data.last;
+  const lista = await getCotizaciones();
+  const folioStorage = (await storageGet('folio') || { last: 243 }).last;
+  const folioMaxCots = lista.reduce((max, c) => {
+    const n = parseInt(c.folio);
+    return !isNaN(n) && n > max ? n : max;
+  }, 0);
+  const folioActual = Math.max(folioStorage, folioMaxCots, 243);
+  await storageSet('folio', { last: folioActual + 1 });
+  return folioActual + 1;
 }
 // ═══════════════════ GOOGLE SHEETS SYNC ═══════════════════
 async function sheetsRequest(payload) {
