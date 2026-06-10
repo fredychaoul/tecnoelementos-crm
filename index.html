@@ -315,7 +315,6 @@
   <div class="tabs">
     <div class="tab active" onclick="showPage('nueva')">+ Nueva Cotización</div>
     <div class="tab" onclick="showPage('crm')">📊 CRM / Historial</div>
-    <div class="tab" onclick="showPage('pipeline')">🔥 Pipeline</div>
   </div>
 </nav>
 
@@ -386,10 +385,7 @@
       </div>
       <div class="form-group">
         <label>Tipo de Cambio (USD→MXN)</label>
-        <div style="display:flex;gap:6px;align-items:center;">
-              <input type="number" id="tipo-cambio" value="17.50" step="0.01" oninput="recalcular()" style="flex:1;">
-              <button onclick="actualizarTC()" title="Obtener TC actual de Banxico" style="background:#1a73e8;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;white-space:nowrap;">🔄 TC</button>
-            </div>
+        <input type="number" id="tipo-cambio" value="17.50" step="0.01" oninput="recalcular()">
       </div>
     </div>
     <div class="form-group" style="margin-top:16px">
@@ -493,62 +489,6 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════ CRM ═══════════════════════════ -->
-<div id="page-pipeline" class="page" style="background:#F5F5F5;min-height:100vh;padding:24px;margin:-24px;">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-    <div>
-      <h2 style="margin:0;font-size:20px;">🔥 Pipeline Comercial</h2>
-      <p style="margin:4px 0 0;color:#888;font-size:13px;">Oportunidades activas y seguimiento</p>
-    </div>
-    <button class="btn btn-primary" onclick="abrirModalPipeline()">+ Nueva oportunidad</button>
-  </div>
-
-  <div id="pipeline-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;"></div>
-
-  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-    <select id="pip-filtro-estatus" onchange="renderPipeline()" style="background:#fff;border:1px solid #ddd;border-radius:6px;color:#333;padding:6px 10px;font-size:12px;">
-      <option value="">Todos los estatus</option>
-      <option value="Prospecto">Prospecto</option>
-      <option value="Cotizado">Cotizado</option>
-      <option value="Seguimiento">Seguimiento</option>
-      <option value="Negociación">Negociación</option>
-      <option value="Ganado">✅ Ganado</option>
-      <option value="Perdido">❌ Perdido</option>
-    </select>
-    <select id="pip-filtro-prioridad" onchange="renderPipeline()" style="background:#fff;border:1px solid #ddd;border-radius:6px;color:#333;padding:6px 10px;font-size:12px;">
-      <option value="">Todas las prioridades</option>
-      <option value="🔥 Alto">🔥 Alto</option>
-      <option value="⚡ Normal">⚡ Normal</option>
-      <option value="❄️ Frío">❄️ Frío</option>
-    </select>
-    <input type="text" id="pip-buscar" oninput="renderPipeline()" placeholder="🔍 Buscar cliente o proyecto..."
-      style="background:#fff;border:1px solid #ddd;border-radius:6px;color:#333;padding:6px 12px;font-size:12px;min-width:200px;">
-  </div>
-
-  <div class="pipeline-tabla-wrap" style="overflow-x:auto;">
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <thead>
-        <tr style="background:#EFEFEF;color:#999;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
-          <th style="padding:10px 12px;text-align:left;">Cliente</th>
-          <th style="padding:10px 12px;text-align:left;">Proyecto</th>
-          <th style="padding:10px 12px;text-align:right;">Monto Est.</th>
-          <th style="padding:10px 12px;text-align:center;">Prioridad</th>
-          <th style="padding:10px 12px;text-align:center;">Estatus</th>
-          <th style="padding:10px 12px;text-align:center;">Seguimiento</th>
-          <th style="padding:10px 12px;text-align:left;">Notas</th>
-          <th style="padding:10px 12px;text-align:center;">Folio</th>
-          <th style="padding:10px 12px;text-align:center;">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="pipeline-body"></tbody>
-    </table>
-    <div id="pipeline-empty" style="display:none;text-align:center;padding:60px;color:#aaa;background:#fff;border-radius:10px;">
-      <div style="font-size:40px;margin-bottom:12px;">🔥</div>
-      <div style="font-size:16px;font-weight:600;color:#888;">Sin oportunidades activas</div>
-      <div style="font-size:13px;color:#666;margin-top:6px;">Agrega tu primera oportunidad con el botón de arriba</div>
-    </div>
-  </div>
-</div>
 
 <div id="page-crm" class="page">
   <div class="stats" style="grid-template-columns:repeat(5,1fr)">
@@ -597,7 +537,6 @@
       </div>
       <button class="btn btn-outline btn-sm" onclick="cerrarModal()">Cerrar</button>
       <button class="btn btn-sm" id="btn-editar-cot" style="background:#E8C96B;color:#1A1A1A;border:none;font-weight:700" onclick="editarCotizacion()">✏️ Editar</button>
-      <button class="btn btn-sm" style="background:#4A90D9;color:#fff;border:none;font-weight:700" onclick="duplicarCotizacion()">📋 Duplicar</button>
       <button class="btn btn-dark btn-sm" onclick="regenerarPDF()">📄 Regenerar PDF</button>
       <button class="btn btn-sm" onclick="generarOC(modalCotizacion)" style="background:#E8943A;color:#fff;border:none;">📦 Generar OC</button>
     </div>
@@ -705,53 +644,53 @@ const PRODUCTOS = [
   { linea:'CAPPA',      modelo:'ALPES TRENTO',            clave:'RSLEI22020', formato:'19×1.90m | 14mm CN3mm | Barniz UV',     pvp:70.9,  costo:46.0849,  unidad:'M2', caja:2.888 },
   { linea:'CAPPA',      modelo:'ALPES MOENA',             clave:'RSLEI22021', formato:'19×1.90m | 14mm CN3mm | Barniz UV',     pvp:70.9,  costo:46.0849,  unidad:'M2', caja:2.888 },
   { linea:'CAPPA',      modelo:'ALPES MONACO',            clave:'CRIVOUW190', formato:'19×1.90m | 14mm CN3mm | Barniz UV',     pvp:70.9,  costo:46.0849,  unidad:'M2', caja:2.888 },
-  { linea:'CAPPA',      modelo:'ALPES CATANIA 240',       clave:'RSLEI22011240', formato:'24×2.20m | 14mm CN3mm | Barniz UV',  pvp:75.54,  costo:50.8369,  unidad:'M2', caja:3.168 },
-  { linea:'CAPPA',      modelo:'ALPES TURIN 240',         clave:'RSLEU22012240', formato:'24×2.20m | 14mm CN3mm | Barniz UV',  pvp:75.54,  costo:50.8369,  unidad:'M2', caja:3.168 },
-  { linea:'CAPPA',      modelo:'ALPES GLARIS 240',        clave:'RSLEI220213240', formato:'24×2.20m | 14mm CN3mm | Barniz UV', pvp:75.54,  costo:50.8369,  unidad:'M2', caja:3.168 },
-  { linea:'CAPPA',      modelo:'ALPES MONTANA 240',       clave:'RSLEI22016240', formato:'24×2.20m | 14mm CN3mm | Barniz UV',  pvp:75.54,  costo:50.8369,  unidad:'M2', caja:3.168 },
+  { linea:'CAPPA',      modelo:'ALPES CATANIA 240',       clave:'RSLEI22011240', formato:'24×2.20m | 14mm CN3mm | Barniz UV',  pvp:106.98,  costo:49.1038,  unidad:'M2', caja:3.168 },
+  { linea:'CAPPA',      modelo:'ALPES TURIN 240',         clave:'RSLEU22012240', formato:'24×2.20m | 14mm CN3mm | Barniz UV',  pvp:106.98,  costo:49.1038,  unidad:'M2', caja:3.168 },
+  { linea:'CAPPA',      modelo:'ALPES GLARIS 240',        clave:'RSLEI220213240', formato:'24×2.20m | 14mm CN3mm | Barniz UV', pvp:106.98,  costo:49.1038,  unidad:'M2', caja:3.168 },
+  { linea:'CAPPA',      modelo:'ALPES MONTANA 240',       clave:'RSLEI22016240', formato:'24×2.20m | 14mm CN3mm | Barniz UV',  pvp:106.98,  costo:49.1038,  unidad:'M2', caja:3.168 },
   // ── CAPPA - TERRA ───────────────────────────────────────────
   // ── LIGNUM (Lista No.79 · desc 40-10-10)
-  { linea:'CAPPA', modelo:'LIGNUM ALBA',      clave:'LGN19ALB', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:71.03, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
-  { linea:'CAPPA', modelo:'LIGNUM BELLORIA',  clave:'LGN19BEL', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:71.03, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
-  { linea:'CAPPA', modelo:'LIGNUM IVOIRE',    clave:'LGN19IVO', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:71.03, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
-  { linea:'CAPPA', modelo:'LIGNUM MARRONE',   clave:'LGN19MAR', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:71.03, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
-  { linea:'CAPPA', modelo:'LIGNUM BRUCIATO',  clave:'LGN19BRU', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:71.03, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
-  { linea:'CAPPA', modelo:'LIGNUM BOSCO',     clave:'LGN19BOS', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:71.03, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
-  { linea:'CAPPA', modelo:'LIGNUM FUMOSO',    clave:'LGN19FUM', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:71.03, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
-  { linea:'CAPPA', modelo:'LIGNUM FULVO',     clave:'LGN19FUL', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:71.03, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
-  { linea:'CAPPA', modelo:'LIGNUM NEBBIA',    clave:'LGN19NEB', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:71.03, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
-  { linea:'CAPPA', modelo:'LIGNUM OMBRA',     clave:'LGN19OMB', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:71.03, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
-  { linea:'CAPPA', modelo:'LIGNUM QUERCIA',   clave:'LGN19QUE', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:71.03, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
-  { linea:'CAPPA', modelo:'LIGNUM ALBA 24',   clave:'LGN24ALB', formato:'24cm × 2.20m · 14mm · Barniz UV', pvp:80.75, costo:52.488, unidad:'M2', moneda:'USD', caja:3.168 },
-  { linea:'CAPPA', modelo:'LIGNUM BELLORIA 24',clave:'LGN24BEL', formato:'24cm × 2.20m · 14mm · Barniz UV', pvp:80.75, costo:52.488, unidad:'M2', moneda:'USD', caja:3.168 },
-  { linea:'CAPPA', modelo:'LIGNUM IVOIRE 24', clave:'LGN24IVO', formato:'24cm × 2.20m · 14mm · Barniz UV', pvp:80.75, costo:52.488, unidad:'M2', moneda:'USD', caja:3.168 },
-  { linea:'CAPPA', modelo:'LIGNUM HERRINGBONE ALBA',    clave:'LGNHBALB', formato:'12.5cm × 60cm · 14mm · Par obligatorio', pvp:75.52, costo:49.086, unidad:'M2', moneda:'USD', caja:1.2, cajaPar:true },
-  { linea:'CAPPA', modelo:'LIGNUM HERRINGBONE BELLORIA', clave:'LGNHBBEL', formato:'12.5cm × 60cm · 14mm · Par obligatorio', pvp:75.52, costo:49.086, unidad:'M2', moneda:'USD', caja:1.2, cajaPar:true },
-  { linea:'CAPPA', modelo:'LIGNUM HERRINGBONE IVOIRE',  clave:'LGNHBIVO', formato:'12.5cm × 60cm · 14mm · Par obligatorio', pvp:75.52, costo:49.086, unidad:'M2', moneda:'USD', caja:1.2, cajaPar:true },
-  { linea:'CAPPA', modelo:'LIGNUM HERRINGBONE MARRONE', clave:'LGNHBMAR', formato:'12.5cm × 60cm · 14mm · Par obligatorio', pvp:75.52, costo:49.086, unidad:'M2', moneda:'USD', caja:1.2, cajaPar:true },
-  { linea:'CAPPA',      modelo:'TERRA VOLCANO',           clave:'FCBRA102190', formato:'19×1.90m | 10mm CN2mm | Barniz UV',    pvp:54.58,  costo:35.478672,  unidad:'M2', caja:2.888 },
-  { linea:'CAPPA',      modelo:'TERRA SUNSET',            clave:'FCCL91102190', formato:'19×1.90m | 10mm CN2mm | Barniz UV',   pvp:54.58,  costo:35.478672,  unidad:'M2', caja:2.888 },
-  { linea:'CAPPA',      modelo:'TERRA WINTER',            clave:'FCM094102190', formato:'19×1.90m | 10mm CN2mm | Barniz UV',   pvp:54.58,  costo:35.478672,  unidad:'M2', caja:2.888 },
-  { linea:'CAPPA',      modelo:'TERRA WIND',              clave:'FCNAE102190', formato:'19×1.90m | 10mm CN2mm | Barniz UV',    pvp:54.58,  costo:35.478672,  unidad:'M2', caja:2.888 },
+  { linea:'CAPPA', modelo:'LIGNUM ALBA',      clave:'LGN19ALB', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:95.00, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
+  { linea:'CAPPA', modelo:'LIGNUM BELLORIA',  clave:'LGN19BEL', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:95.00, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
+  { linea:'CAPPA', modelo:'LIGNUM IVOIRE',    clave:'LGN19IVO', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:95.00, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
+  { linea:'CAPPA', modelo:'LIGNUM MARRONE',   clave:'LGN19MAR', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:95.00, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
+  { linea:'CAPPA', modelo:'LIGNUM BRUCIATO',  clave:'LGN19BRU', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:95.00, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
+  { linea:'CAPPA', modelo:'LIGNUM BOSCO',     clave:'LGN19BOS', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:95.00, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
+  { linea:'CAPPA', modelo:'LIGNUM FUMOSO',    clave:'LGN19FUM', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:95.00, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
+  { linea:'CAPPA', modelo:'LIGNUM FULVO',     clave:'LGN19FUL', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:95.00, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
+  { linea:'CAPPA', modelo:'LIGNUM NEBBIA',    clave:'LGN19NEB', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:95.00, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
+  { linea:'CAPPA', modelo:'LIGNUM OMBRA',     clave:'LGN19OMB', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:95.00, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
+  { linea:'CAPPA', modelo:'LIGNUM QUERCIA',   clave:'LGN19QUE', formato:'19cm × 1.90m · 14mm · Barniz UV', pvp:95.00, costo:46.17, unidad:'M2', moneda:'USD', caja:2.888 },
+  { linea:'CAPPA', modelo:'LIGNUM ALBA 24',   clave:'LGN24ALB', formato:'24cm × 2.20m · 14mm · Barniz UV', pvp:108.00, costo:52.488, unidad:'M2', moneda:'USD', caja:3.168 },
+  { linea:'CAPPA', modelo:'LIGNUM BELLORIA 24',clave:'LGN24BEL', formato:'24cm × 2.20m · 14mm · Barniz UV', pvp:108.00, costo:52.488, unidad:'M2', moneda:'USD', caja:3.168 },
+  { linea:'CAPPA', modelo:'LIGNUM IVOIRE 24', clave:'LGN24IVO', formato:'24cm × 2.20m · 14mm · Barniz UV', pvp:108.00, costo:52.488, unidad:'M2', moneda:'USD', caja:3.168 },
+  { linea:'CAPPA', modelo:'LIGNUM HERRINGBONE ALBA',    clave:'LGNHBALB', formato:'12.5cm × 60cm · 14mm · Par obligatorio', pvp:101.00, costo:49.086, unidad:'M2', moneda:'USD', caja:1.2, cajaPar:true },
+  { linea:'CAPPA', modelo:'LIGNUM HERRINGBONE BELLORIA', clave:'LGNHBBEL', formato:'12.5cm × 60cm · 14mm · Par obligatorio', pvp:101.00, costo:49.086, unidad:'M2', moneda:'USD', caja:1.2, cajaPar:true },
+  { linea:'CAPPA', modelo:'LIGNUM HERRINGBONE IVOIRE',  clave:'LGNHBIVO', formato:'12.5cm × 60cm · 14mm · Par obligatorio', pvp:101.00, costo:49.086, unidad:'M2', moneda:'USD', caja:1.2, cajaPar:true },
+  { linea:'CAPPA', modelo:'LIGNUM HERRINGBONE MARRONE', clave:'LGNHBMAR', formato:'12.5cm × 60cm · 14mm · Par obligatorio', pvp:101.00, costo:49.086, unidad:'M2', moneda:'USD', caja:1.2, cajaPar:true },
+  { linea:'CAPPA',      modelo:'TERRA VOLCANO',           clave:'FCBRA102190', formato:'19×1.90m | 10mm CN2mm | Barniz UV',    pvp:73.00,  costo:35.478,  unidad:'M2', caja:2.888 },
+  { linea:'CAPPA',      modelo:'TERRA SUNSET',            clave:'FCCL91102190', formato:'19×1.90m | 10mm CN2mm | Barniz UV',   pvp:73.00,  costo:35.478,  unidad:'M2', caja:2.888 },
+  { linea:'CAPPA',      modelo:'TERRA WINTER',            clave:'FCM094102190', formato:'19×1.90m | 10mm CN2mm | Barniz UV',   pvp:73.00,  costo:35.478,  unidad:'M2', caja:2.888 },
+  { linea:'CAPPA',      modelo:'TERRA WIND',              clave:'FCNAE102190', formato:'19×1.90m | 10mm CN2mm | Barniz UV',    pvp:73.00,  costo:35.478,  unidad:'M2', caja:2.888 },
   // ── CAPPA - WALNUTS ─────────────────────────────────────────
-  { linea:'CAPPA',      modelo:'WILD WALNUT',             clave:'FIS866814', formato:'12.7cm | 40-120cm | 8.6mm CN0.6mm',    pvp:45.61,  costo:29.64601,  unidad:'M2', caja:3.048 },
-  { linea:'CAPPA',      modelo:'TROPICAL WALNUT',         clave:'FIM126814', formato:'15cm | 40-120cm | 12mm CN0.6mm',    pvp:56.08,  costo:31.6388,  unidad:'M2', caja:1.44 },
-  { linea:'CAPPA',      modelo:'EXOTIC WALNUT',           clave:'KSI140013', formato:'19×1.90m | 14mm CN2mm | Barniz',      pvp:87.48,  costo:48.7413,  unidad:'M2', caja:2.166 },
-  { linea:'CAPPA',      modelo:'HERRINGBONE WALNUTS',     clave:'FHW120090', formato:'12×60cm | 10mm CN2mm | Herringbone',        pvp:67.35,  costo:41.485,  unidad:'M2', caja:1.2, cajaPar:true },
+  { linea:'CAPPA',      modelo:'WILD WALNUT',             clave:'FIS866814', formato:'12.7cm | 40-120cm | 8.6mm CN0.6mm',    pvp:61.00,  costo:29.646,  unidad:'M2', caja:3.048 },
+  { linea:'CAPPA',      modelo:'TROPICAL WALNUT',         clave:'FIM126814', formato:'15cm | 40-120cm | 12mm CN0.6mm',    pvp:75.00,  costo:36.45,  unidad:'M2', caja:1.44 },
+  { linea:'CAPPA',      modelo:'EXOTIC WALNUT',           clave:'KSI140013', formato:'19×1.90m | 14mm CN2mm | Barniz',      pvp:117.00,  costo:56.862,  unidad:'M2', caja:2.166 },
+  { linea:'CAPPA',      modelo:'HERRINGBONE WALNUTS',     clave:'FHW120090', formato:'12×60cm | 10mm CN2mm | Herringbone',        pvp:96.00,  costo:46.656,  unidad:'M2', caja:1.44, cajaPar:true },
   // ── CAPPA - UNIQUE ──────────────────────────────────────────
   { linea:'CAPPA',      modelo:'UNIQUE BOURBONE',         clave:'FUQBOUR240', formato:'24×2.20m | Nogal CN2mm | Barniz',     pvp:116.01,  costo:75.4077,  unidad:'M2', caja:3.168 },
   { linea:'CAPPA',      modelo:'UNIQUE TOBACCO',          clave:'FUQTOB240', formato:'24×2.20m | Nogal CN2mm | Barniz',      pvp:116.01,  costo:75.4077,  unidad:'M2', caja:3.168 },
   { linea:'CAPPA',      modelo:'UNIQUE BOURBONE HBONE',   clave:'Ver clave', formato:'12×60cm | Herringbone | Nogal',        pvp:121.92,  costo:79.2462, unidad:'M2', caja:1.2, cajaPar:true },
   { linea:'CAPPA',      modelo:'UNIQUE TOBACCO HBONE',    clave:'Ver clave', formato:'12×60cm | Herringbone | Nogal',        pvp:121.92,  costo:79.2462, unidad:'M2', caja:1.2, cajaPar:true },
-  { linea:'CAPPA',      modelo:'ADHESIVO CH2',            clave:'EUR800-AC080', formato:'Cubeta plástico 20kg',   pvp:121.13,  costo:78.732, unidad:'PIEZA'},
-  { linea:'CAPPA',      modelo:'BOSTIK ULTRA STRONG',      clave:'B800-842', formato:'Cubeta 15.1kg',     pvp:214.34,  costo:139.32, unidad:'PIEZA'},
+  { linea:'CAPPA',      modelo:'ADHESIVO CH2',            clave:'EUR800-AC080', formato:'Cubeta plástico 20kg',   pvp:145.80,  costo:78.732, unidad:'PIEZA'},
+  { linea:'CAPPA',      modelo:'BOSTIK ULTRA STRONG',      clave:'B800-842', formato:'Cubeta 15.1kg',     pvp:232.20,  costo:139.32, unidad:'PIEZA'},
   // ALPES Sobre Pedido — 30cm
 
-  { linea:'CAPPA',      modelo:'ALPES ZERMATT',            clave:'NSBA6001190', formato:'19×1.90m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:70.09,  costo:45.5612,  unidad:'M2', caja:2.888 },
-  { linea:'CAPPA',      modelo:'ALPES BASEL',            clave:'NSBA6002190', formato:'19×1.90m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:70.09,  costo:45.5612,  unidad:'M2', caja:2.888 },
-  { linea:'CAPPA',      modelo:'ALPES INTERLAKEN',            clave:'NSBA6006190', formato:'19×1.90m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:70.09,  costo:45.5612,  unidad:'M2', caja:2.888 },
-  { linea:'CAPPA',      modelo:'ALPES GINEBRA',            clave:'NSBA7006190', formato:'19×1.90m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:70.09,  costo:45.5612,  unidad:'M2', caja:2.888 },
-  { linea:'CAPPA',      modelo:'ALPES GALO',            clave:'NMPS735190', formato:'19×1.90m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:70.09,  costo:45.5612,  unidad:'M2', caja:2.888 },
+  { linea:'CAPPA',      modelo:'ALPES ZERMATT',            clave:'NSBA6001190', formato:'19×1.90m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:96.98,  costo:45.5612,  unidad:'M2', caja:2.888 },
+  { linea:'CAPPA',      modelo:'ALPES BASEL',            clave:'NSBA6002190', formato:'19×1.90m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:96.98,  costo:45.5612,  unidad:'M2', caja:2.888 },
+  { linea:'CAPPA',      modelo:'ALPES INTERLAKEN',            clave:'NSBA6006190', formato:'19×1.90m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:96.98,  costo:45.5612,  unidad:'M2', caja:2.888 },
+  { linea:'CAPPA',      modelo:'ALPES GINEBRA',            clave:'NSBA7006190', formato:'19×1.90m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:96.98,  costo:45.5612,  unidad:'M2', caja:2.888 },
+  { linea:'CAPPA',      modelo:'ALPES GALO',            clave:'NMPS735190', formato:'19×1.90m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:96.98,  costo:45.5612,  unidad:'M2', caja:2.888 },
   { linea:'CAPPA',      modelo:'ALPES ZERMATT 240',        clave:'NSBA6001240', formato:'24×2.20m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:77.32,  costo:50.2592,  unidad:'M2', caja:3.168 },
   { linea:'CAPPA',      modelo:'ALPES BASEL 240',        clave:'NSBA6002240', formato:'24×2.20m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:77.32,  costo:50.2592,  unidad:'M2', caja:3.168 },
   { linea:'CAPPA',      modelo:'ALPES INTERLAKEN 240',        clave:'NSRA6006240', formato:'24×2.20m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:77.32,  costo:50.2592,  unidad:'M2', caja:3.168 },
@@ -769,63 +708,99 @@ const PRODUCTOS = [
   { linea:'CAPPA',      modelo:'ALPES GINEBRA HBONE',      clave:'NCOUH700690', formato:'12.5×60cm | 14mm CN3mm | Herringbone SP',     pvp:84.49,  costo:52.0439,  unidad:'M2', caja:1.2, cajaPar:true },
   { linea:'CAPPA',      modelo:'ALPES GALO HBONE',         clave:'NMCOUH0735090', formato:'12.5×60cm | 14mm CN3mm | Herringbone SP',   pvp:84.49,  costo:52.0439,  unidad:'M2', caja:1.2, cajaPar:true },
   // Molduras CAPPA — Con acabado (Barniz UV)
-    { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Catania',     clave:'SKCA-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Catania',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Catania',     clave:'SKCA-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Catania',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Catania', clave:'SNCA-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Catania', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Turin',     clave:'SKTU-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Turin',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Turin',     clave:'SKTU-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Turin',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Turin', clave:'SNTU-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Turin', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Glaris',     clave:'SKGL-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Glaris',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Glaris',     clave:'SKGL-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Glaris',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Glaris', clave:'SNGL-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Glaris', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Montana',     clave:'SKMO-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Montana',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Montana',     clave:'SKMO-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Montana',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Montana', clave:'SNMO-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Montana', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Trento',     clave:'SKTR-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Trento',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Trento',     clave:'SKTR-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Trento',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Trento', clave:'SNTR-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Trento', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Moena',     clave:'SKMN-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Moena',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Moena',     clave:'SKMN-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Moena',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Moena', clave:'SNMN-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Moena', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Monaco',     clave:'SKMCO-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Monaco',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Monaco',     clave:'SKMCO-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Monaco',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Monaco', clave:'SNMCO-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Monaco', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Zermatt',     clave:'NSBA6001190-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Zermatt',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Zermatt',     clave:'NSBA6001190-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Zermatt',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Zermatt', clave:'NSBA6001190-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Zermatt', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Basel',     clave:'NSBA6002190-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Basel',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Basel',     clave:'NSBA6002190-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Basel',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Basel', clave:'NSBA6002190-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Basel', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Interlaken',     clave:'PA6006-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Interlaken',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Interlaken',     clave:'PA6006-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Interlaken',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Interlaken', clave:'RC6006-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Interlaken', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Ginebra',     clave:'NSBA7006190-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Ginebra',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Ginebra',     clave:'NSBA7006190-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Ginebra',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Ginebra', clave:'NSBA7006190-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Ginebra', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Galo',     clave:'PC0018-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Galo',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Galo',     clave:'PC0018-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Galo',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Galo', clave:'RC0018-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Galo', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Volcano',     clave:'SKVOL-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Volcano',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Volcano',     clave:'SKVOL-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Volcano',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Volcano', clave:'SNVOL-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Volcano', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Sunset',     clave:'SKSUN-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Sunset',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Sunset',     clave:'SKSUN-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Sunset',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Sunset', clave:'SNSUN-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Sunset', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Winter',     clave:'SKWIN-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Winter',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Winter',     clave:'SKWIN-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Winter',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Winter', clave:'SNWIN-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Winter', pvp:33.12, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Wind',     clave:'SKWND-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Wind',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Wind',     clave:'SKWND-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Wind',             pvp:20.47,  costo:9.7273, unidad:'PIEZA'},
-  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Wind', clave:'SNWND-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Wind', pvp:33.12, unidad:'PIEZA'},
+    { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Catania',     clave:'SKCA-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Catania',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Catania',     clave:'SKCA-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Catania',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Catania', clave:'SNCA-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Catania', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Turin',     clave:'SKTU-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Turin',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Turin',     clave:'SKTU-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Turin',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Turin', clave:'SNTU-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Turin', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Glaris',     clave:'SKGL-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Glaris',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Glaris',     clave:'SKGL-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Glaris',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Glaris', clave:'SNGL-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Glaris', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Montana',     clave:'SKMO-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Montana',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Montana',     clave:'SKMO-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Montana',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Montana', clave:'SNMO-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Montana', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Trento',     clave:'SKTR-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Trento',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Trento',     clave:'SKTR-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Trento',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Trento', clave:'SNTR-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Trento', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Moena',     clave:'SKMN-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Moena',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Moena',     clave:'SKMN-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Moena',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Moena', clave:'SNMN-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Moena', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Monaco',     clave:'SKMCO-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Monaco',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Monaco',     clave:'SKMCO-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Monaco',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Monaco', clave:'SNMCO-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Monaco', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Zermatt',     clave:'NSBA6001190-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Zermatt',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Zermatt',     clave:'NSBA6001190-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Zermatt',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Zermatt', clave:'NSBA6001190-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Zermatt', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Basel',     clave:'NSBA6002190-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Basel',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Basel',     clave:'NSBA6002190-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Basel',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Basel', clave:'NSBA6002190-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Basel', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Interlaken',     clave:'PA6006-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Interlaken',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Interlaken',     clave:'PA6006-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Interlaken',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Interlaken', clave:'RC6006-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Interlaken', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Ginebra',     clave:'NSBA7006190-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Ginebra',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Ginebra',     clave:'NSBA7006190-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Ginebra',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Ginebra', clave:'NSBA7006190-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Ginebra', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Galo',     clave:'PC0018-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Galo',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Galo',     clave:'PC0018-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Galo',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Galo', clave:'RC0018-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Galo', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Volcano',     clave:'SKVOL-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Volcano',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Volcano',     clave:'SKVOL-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Volcano',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Volcano', clave:'SNVOL-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Volcano', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Sunset',     clave:'SKSUN-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Sunset',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Sunset',     clave:'SKSUN-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Sunset',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Sunset', clave:'SNSUN-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Sunset', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Winter',     clave:'SKWIN-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Winter',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Winter',     clave:'SKWIN-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Winter',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Winter', clave:'SNWIN-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Winter', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Wind',     clave:'SKWND-600', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Wind',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Wind',     clave:'SKWND-700', formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Wind',             pvp:20.47,  costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Wind', clave:'SNWND-450', formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Wind', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+
+  // ── Molduras LIGNUM con barniz (Lista No.79)
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Alba',         clave:'PLBA-600',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Alba',         pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Alba',         clave:'PLBA-700',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Alba',         pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Alba',     clave:'PLBA-450',  formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Alba',   pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Belloria',     clave:'PBLL-600',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Belloria',     pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Belloria',     clave:'PBLL-700',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Belloria',     pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Belloria', clave:'PBLL-450',  formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Belloria',pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Ivoire',       clave:'BVRE-600',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Ivoire',       pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Ivoire',       clave:'BVRE-700',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Ivoire',       pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Ivoire',   clave:'BVRE-450',  formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Ivoire', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Marrone',      clave:'PMRN-600',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Marrone',      pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Marrone',      clave:'PMRN-700',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Marrone',      pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Marrone',  clave:'PMRN-450',  formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Marrone',pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Bruciato',     clave:'PBRC-600',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Bruciato',     pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Bruciato',     clave:'PBRC-700',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Bruciato',     pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Bruciato', clave:'PBRC-450',  formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Bruciato',pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Bosco',        clave:'PBSC-600',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Bosco',        pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Bosco',        clave:'PBSC-700',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Bosco',        pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Bosco',    clave:'PBSC-450',  formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Bosco',  pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Fumoso',       clave:'PFMS-600',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Fumoso',       pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Fumoso',       clave:'PFMS-700',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Fumoso',       pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Fumoso',   clave:'PFMS-450',  formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Fumoso', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Fulvo',        clave:'PFLV-600',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Fulvo',        pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Fulvo',        clave:'PFLV-700',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Fulvo',        pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Fulvo',    clave:'PFLV-450',  formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Fulvo',  pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Nebbia',       clave:'PNBB-600',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Nebbia',       pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Nebbia',       clave:'PNBB-700',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Nebbia',       pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Nebbia',   clave:'PNBB-450',  formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Nebbia', pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Ombra',        clave:'PMBR-600',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Ombra',        pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Ombra',        clave:'PMBR-700',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Ombra',        pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Ombra',    clave:'PMBR-450',  formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Ombra',  pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm — Quercia',      clave:'PQRC-600',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 6cm | Quercia',      pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm — Quercia',      clave:'PQRC-700',  formato:'2.40ml | MDF chapa madera c/barniz | Zoclo 7cm | Quercia',      pvp:20.47, costo:11.0538, unidad:'PIEZA'},
+  { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón — Quercia',  clave:'PQRC-450',  formato:'Pieza | MDF chapa madera c/barniz | Nariz s/tropezón | Quercia',pvp:33.12, costo:17.8848, unidad:'PIEZA'},
+
   // Sin acabado — aplica todos los modelos
   { linea:'CAPPA MOLDURA', modelo:'Zoclo 6cm (sin acabado)',     clave:'P6100-600',  formato:'2.40ml | MDF chapa madera sin barniz | Zoclo 6cm',           pvp:14.97,  costo:9.7273,  unidad:'PIEZA'},
   { linea:'CAPPA MOLDURA', modelo:'Zoclo 7cm (sin acabado)',     clave:'P6100-700',  formato:'2.40ml | MDF chapa madera sin barniz | Zoclo 7cm',           pvp:14.97,  costo:9.7273,  unidad:'PIEZA'},
   { linea:'CAPPA MOLDURA', modelo:'Nariz Escalón (sin acabado)', clave:'RC3000-450', formato:'Pieza | MDF chapa madera sin barniz | Nariz s/tropezón', pvp:24.29,  costo:11.5426, unidad:'PIEZA'},
   // Insumos CAPPA
-  { linea:'CAPPA INSUMO',  modelo:'Carsol',                   clave:'904-CAR', formato:'Aceite reparador | Lata 1lt',  pvp:30.93,  costo:20.1042, unidad:'PIEZA'},
-  { linea:'CAPPA INSUMO',  modelo:'Deter Parquet',            clave:'904-DPQ', formato:'Detergente concentrado | Botella 1lt', pvp:18.77,  costo:12.1986, unidad:'PIEZA'},
-  { linea:'CAPPA INSUMO',  modelo:'Dergos',                   clave:'904-DRGS', formato:'Jabón y cera emulsionada | Botella 1lt',pvp:34.44,  costo:22.383, unidad:'PIEZA'},
-  { linea:'CAPPA INSUMO',  modelo:'Deterol',                  clave:'904-DET', formato:'Jabón aceite coco/soya | Botella 1lt', pvp:18.94,  costo:12.312, unidad:'PIEZA'},
+  { linea:'CAPPA INSUMO',  modelo:'Carsol',                   clave:'904-CAR', formato:'Aceite reparador | Lata 1lt',  pvp:37.23,  costo:20.1042, unidad:'PIEZA'},
+  { linea:'CAPPA INSUMO',  modelo:'Deter Parquet',            clave:'904-DPQ', formato:'Detergente concentrado | Botella 1lt', pvp:22.59,  costo:12.1986, unidad:'PIEZA'},
+  { linea:'CAPPA INSUMO',  modelo:'Dergos',                   clave:'904-DRGS', formato:'Jabón y cera emulsionada | Botella 1lt',pvp:41.45,  costo:22.383, unidad:'PIEZA'},
+  { linea:'CAPPA INSUMO',  modelo:'Deterol',                  clave:'904-DET', formato:'Jabón aceite coco/soya | Botella 1lt', pvp:22.80,  costo:12.312, unidad:'PIEZA'},
   // ── BODEN - TRIBECA ──
   { linea:'BODEN',      modelo:'TRIBECA — Lavish',              clave:'ZBOD22XL-3', formato:'22.8×1.80m | SPC 6.5mm',   pvp:38.48,  costo:25.0145, unidad:'M2', caja:2.052 },
   { linea:'BODEN',      modelo:'TRIBECA — Smokey Brown',        clave:'ZBOD22XL-7', formato:'22.8×1.80m | SPC 6.5mm',   pvp:38.48,  costo:25.0145, unidad:'M2', caja:2.052 },
@@ -1263,37 +1238,17 @@ let currentFolio = 244;
 let modalCotizacion = null;
 
 async function init() {
-  // Mostrar indicador de carga
-  const folioEl = document.getElementById('folio-display');
-  if (folioEl) folioEl.textContent = 'Cargando...';
-
-  // 1. SIEMPRE cargar desde Sheets al iniciar la sesión
-  try {
-    const r = await sheetsRequest({ action: 'load', perfil: 'B2B' });
-    if (r && r.ok && r.cotizaciones && r.cotizaciones.length > 0) {
-      const fromSheets = r.cotizaciones.map(c => {
-        try { return sanitizarCotizacion(JSON.parse(c.json)); } catch { return null; }
-      }).filter(Boolean);
-      if (fromSheets.length > 0) {
-        await storageSet('cotizaciones', fromSheets);
-        console.log('✅ Cargado desde Sheets:', fromSheets.length, 'cotizaciones');
-      }
-    }
-  } catch(e) {
-    console.warn('⚠️ Sheets no disponible, usando caché local:', e.message);
-  }
-
-  // 2. Calcular folio correcto
+  // 1. Intentar recuperar cotizaciones del Sheets (silencioso si falla)
+  await recoverCotizacionesFromSheets();
+  // 2. Calcular folio correcto basado en todas las cotizaciones
   currentFolio = await getNextFolio();
-  if (folioEl) folioEl.textContent = 'TEC-' + String(currentFolio).padStart(4,'0');
-
-  // 3. Limpiar borradores corruptos
+  document.getElementById('folio-display').textContent = 'TEC-' + String(currentFolio).padStart(4,'0');
+  // 3. Limpiar borradores con folio string 'BORRADOR'
   const lista = await getCotizaciones();
   const sinBorradores = lista.filter(c => c.folio > 0);
   if (sinBorradores.length < lista.length) {
-    await storageSet('cotizaciones', sinBorradores);
+    await saveCotizaciones(sinBorradores, true);
   }
-
   agregarProducto();
   actualizarAvisoInstalacion();
 }
@@ -2435,12 +2390,6 @@ async function generarPDF(cotData) {
   doc.text('TECNOELEMENTOS  |  Tel: 55 5509 6659', pw/2, ph-12, {align:'center'});
   doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(170,170,170);
   doc.text('Pisos de Madera de Ingeniería  ·  Pisos SPC  ·  Cerámicos Decorativos  ·  Deck', pw/2, ph-6, {align:'center'});
-  // Vigencia
-  const fechaVigObj = new Date();
-  fechaVigObj.setDate(fechaVigObj.getDate() + 15);
-  const fechaVigStr = fechaVigObj.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'});
-  doc.setFontSize(7); doc.setTextColor(130,130,130);
-  doc.text('Cotización válida por 15 días — vence el ' + fechaVigStr, pw/2, ph-3, {align:'center'});
 
   const nombreCliente = datos.cliente.replace(/\s+/g,'-');
   const nombreProyecto = datos.proyecto ? '-' + datos.proyecto.replace(/\s+/g,'-') : '';
@@ -2526,59 +2475,6 @@ async function descartarBorrador(tr) {
   await saveCotizaciones(nueva);
   mostrarToast('Borrador descartado', 'info');
   renderCRM();
-}
-
-async function duplicarCotizacion() {
-  if (!modalCotizacion) return;
-  const cot = modalCotizacion;
-  // Cerrar modal
-  document.getElementById('modal-cotizacion').style.display = 'none';
-  // Limpiar formulario y cargar datos de la cotización sin folio
-  limpiarFormulario();
-  // Cargar datos del cliente
-  document.getElementById('cli-nombre').value = cot.cliente || '';
-  document.getElementById('cli-ciudad').value  = cot.ciudad  || '';
-  document.getElementById('cli-proyecto').value = cot.proyecto || '';
-  document.getElementById('cli-dir').value      = cot.direccion || '';
-  document.getElementById('moneda').value       = cot.moneda || 'USD';
-  document.getElementById('tipo-cambio').value  = cot.tc    || 17.5;
-  if (cot.observaciones) document.getElementById('observaciones').value = cot.observaciones;
-  // Cargar productos
-  document.getElementById('productos-body').innerHTML = '';
-  filaCount = 0;
-  for (const p of (cot.productos || [])) {
-    await agregarProductoDesdeObj(p);
-  }
-  recalcular();
-  mostrarToast('📋 Cotización duplicada — modifica y guarda como nueva', 'info');
-  showPage('cotizacion');
-}
-
-async function agregarProductoDesdeObj(p) {
-  filaCount++;
-  const id = 'fila-' + filaCount;
-  agregarProducto();
-  await new Promise(r => setTimeout(r, 50));
-  // Buscar la línea y modelo
-  const selLinea = document.getElementById(id + '-linea');
-  const selProd  = document.getElementById(id + '-prod');
-  if (selLinea && p.linea) {
-    selLinea.value = p.linea;
-    filtrarModelos(id);
-    await new Promise(r => setTimeout(r, 50));
-  }
-  if (selProd && p.nombre) {
-    for (const opt of selProd.options) {
-      if (opt.value === p.nombre) { selProd.value = p.nombre; break; }
-    }
-    autoFill(id);
-    await new Promise(r => setTimeout(r, 50));
-  }
-  const cantEl = document.getElementById(id + '-cant');
-  if (cantEl) { cantEl.value = p.cantidad || 1; actualizarCajas(id); }
-  const pvpEl = document.getElementById(id + '-pvp');
-  if (pvpEl) { pvpEl.value = p.pvp_final || p.pvp || 0; pvpEl.dataset.editadoManual = '1'; }
-  recalcular();
 }
 
 async function filtrarCRM() { renderCRM(); }
@@ -3223,38 +3119,6 @@ window.addEventListener('unhandledrejection', function(e) {
   if (div) { div.style.display='block'; div.textContent = '❌ Error async: ' + msg; }
 });
 init();
-function compartirWhatsApp() {
-  if (!modalCotizacion) return;
-  const c = modalCotizacion;
-  const folio   = 'TEC-' + String(c.folio).padStart(4,'0');
-  const simbolo = c.simbolo || (c.moneda === 'MXN' ? '$' : 'USD ');
-  const total   = Number(c.total).toLocaleString('es-MX', {minimumFractionDigits:2});
-  const prods   = (c.productos || []).map(p => `  • ${p.nombre} — ${p.cantidad} ${p.unidad||'m²'}`).join('\n');
-  const inst    = (c.instalacion || []).length > 0 ? `\n\n*Instalación incluida*` : '';
-  const msg = `*TECNOELEMENTOS*\n*Cotización ${folio}*\n\nCliente: ${c.cliente}${c.proyecto ? ' | ' + c.proyecto : ''}\n\n*Productos:*\n${prods}${inst}\n\n*Total: ${simbolo}${total} ${c.moneda}*\n\nVigencia: 15 días\nTel. 55 5509 6659`;
-  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
-}
-
-async function actualizarTC() {
-  const btn = document.querySelector('[onclick="actualizarTC()"]');
-  if (btn) btn.textContent = '⏳';
-  try {
-    // Usar exchangerate-api (gratuita, sin key)
-    const r = await fetch('https://open.er-api.com/v6/latest/USD');
-    const d = await r.json();
-    if (d && d.rates && d.rates.MXN) {
-      const tc = d.rates.MXN.toFixed(4);
-      document.getElementById('tipo-cambio').value = tc;
-      recalcular();
-      mostrarToast('✅ TC actualizado: $' + tc + ' MXN/USD', 'success');
-    }
-  } catch(e) {
-    mostrarToast('⚠️ No se pudo obtener el TC. Ingresa manualmente.', 'error');
-  } finally {
-    if (btn) btn.textContent = '🔄 TC';
-  }
-}
-
 </script>
 
 <!-- ═══════════════════ MODAL TODOIST ═══════════════════ -->
