@@ -1253,19 +1253,43 @@ async function init() {
 async function recoverCotizacionesFromSheets() {
   try {
     const res = await sheetsRequest({ action: 'load' });
-    if (res && res.cotizaciones && res.cotizaciones.length > 0) {
-      // Normalizar folios: "TEC-0247" → 247
-      const normalized = res.cotizaciones.map(c => ({
-        ...c,
-        folio: parseFolio(c.folio) || c.folio
-      }));
-      // Fusionar con local — conservar los locales si tienen más datos
-      const local = await getCotizaciones();
-      const localFolios = new Set(local.map(c => String(parseFolio(c.folio))));
-      const nuevas = normalized.filter(c => !localFolios.has(String(parseFolio(c.folio))));
+    if (!res || !res.cotizaciones || res.cotizaciones.length === 0) return;
+
+    // Cada fila del Sheets tiene un campo 'json' con el objeto completo
+    const fromSheets = res.cotizaciones.map(row => {
+      // Intentar parsear el campo json completo
+      if (row.json) {
+        try {
+          const obj = JSON.parse(row.json);
+          // Asegurar folio numérico
+          obj.folio = parseFolio(obj.folio || row.folio);
+          return obj;
+        } catch(e) {}
+      }
+      // Fallback: usar campos individuales
+      return {
+        folio:    parseFolio(row.folio),
+        fecha:    row.fecha || '',
+        cliente:  row.cliente || '',
+        ciudad:   row.ciudad || '',
+        proyecto: row.proyecto || '',
+        moneda:   row.moneda || 'USD',
+        total:    parseFloat(row.total) || 0,
+        status:   row.estatus || 'Pendiente',
+        productos: [],
+        instalacion: []
+      };
+    }).filter(c => c.folio > 0);
+
+    // Fusionar con local — conservar locales si tienen más datos
+    const local = await getCotizaciones();
+    const localFolios = new Set(local.map(c => String(parseFolio(c.folio))));
+    const nuevas = fromSheets.filter(c => !localFolios.has(String(c.folio)));
+    
+    if (nuevas.length > 0) {
       const merged = [...local, ...nuevas].sort((a,b) => parseFolio(b.folio) - parseFolio(a.folio));
-      await saveCotizaciones(merged);
-      console.log('✅ Sheets sincronizado:', merged.length, 'cotizaciones');
+      await storageSet('cotizaciones', merged); // guardar directo sin re-enviar a Sheets
+      console.log('✅ Sheets sincronizado:', nuevas.length, 'nuevas + ', local.length, 'locales');
     }
   } catch(e) {
     console.warn('No se pudo sincronizar con Sheets:', e.message);
