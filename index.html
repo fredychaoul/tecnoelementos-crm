@@ -1237,10 +1237,23 @@ let currentFolio = 244;
 let modalCotizacion = null;
 
 async function init() {
+  // Primero sincronizar cotizaciones desde Sheets para tener el folio correcto
+  await recoverCotizacionesFromSheets();
   currentFolio = await getNextFolio();
   document.getElementById('folio-display').textContent = 'TEC-' + String(currentFolio).padStart(4,'0');
   agregarProducto();
   actualizarAvisoInstalacion();
+}
+
+async function recoverCotizacionesFromSheets() {
+  try {
+    const res = await sheetsRequest({ action: 'load' });
+    if (res && res.cotizaciones && res.cotizaciones.length > 0) {
+      await saveCotizaciones(res.cotizaciones);
+    }
+  } catch(e) {
+    console.warn('No se pudo sincronizar con Sheets:', e.message);
+  }
 }
 
 // ═══════════════════ NAVEGACIÓN ═══════════════════
