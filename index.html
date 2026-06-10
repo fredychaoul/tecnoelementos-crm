@@ -1259,17 +1259,37 @@ let currentFolio = 244;
 let modalCotizacion = null;
 
 async function init() {
-  // 1. Intentar recuperar cotizaciones del Sheets (silencioso si falla)
-  await recoverCotizacionesFromSheets();
-  // 2. Calcular folio correcto basado en todas las cotizaciones
+  // Mostrar indicador de carga
+  const folioEl = document.getElementById('folio-display');
+  if (folioEl) folioEl.textContent = 'Cargando...';
+
+  // 1. SIEMPRE cargar desde Sheets al iniciar la sesión
+  try {
+    const r = await sheetsRequest({ action: 'load', perfil: 'B2B' });
+    if (r && r.ok && r.cotizaciones && r.cotizaciones.length > 0) {
+      const fromSheets = r.cotizaciones.map(c => {
+        try { return sanitizarCotizacion(JSON.parse(c.json)); } catch { return null; }
+      }).filter(Boolean);
+      if (fromSheets.length > 0) {
+        await storageSet('cotizaciones', fromSheets);
+        console.log('✅ Cargado desde Sheets:', fromSheets.length, 'cotizaciones');
+      }
+    }
+  } catch(e) {
+    console.warn('⚠️ Sheets no disponible, usando caché local:', e.message);
+  }
+
+  // 2. Calcular folio correcto
   currentFolio = await getNextFolio();
-  document.getElementById('folio-display').textContent = 'TEC-' + String(currentFolio).padStart(4,'0');
-  // 3. Limpiar borradores con folio string 'BORRADOR'
+  if (folioEl) folioEl.textContent = 'TEC-' + String(currentFolio).padStart(4,'0');
+
+  // 3. Limpiar borradores corruptos
   const lista = await getCotizaciones();
   const sinBorradores = lista.filter(c => c.folio > 0);
   if (sinBorradores.length < lista.length) {
-    await saveCotizaciones(sinBorradores, true);
+    await storageSet('cotizaciones', sinBorradores);
   }
+
   agregarProducto();
   actualizarAvisoInstalacion();
 }
