@@ -1185,8 +1185,13 @@ async function sheetsRequest(payload) {
 }
 
 async function getCotizaciones() {
-  // SIEMPRE cargar primero desde local — nunca sobreescribir con Sheets vacío
-  return await storageGet('cotizaciones') || [];
+  const lista = await storageGet('cotizaciones') || [];
+  // Sanitizar: asegurar que productos e instalacion siempre sean arrays
+  return lista.map(c => ({
+    ...c,
+    productos:   Array.isArray(c.productos)   ? c.productos   : [],
+    instalacion: Array.isArray(c.instalacion) ? c.instalacion : []
+  }));
 }
 
 async function sincronizarDesdeSheets() {
