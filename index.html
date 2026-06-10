@@ -1139,16 +1139,21 @@ async function storageSet(key, val) {
   } catch(e) { console.error('storageSet error:', e); }
 }
 
+function parseFolio(f) {
+  // Acepta tanto 247 como "TEC-0247"
+  if (!f) return 0;
+  const s = String(f).replace(/[^0-9]/g, '');
+  const n = parseInt(s);
+  return isNaN(n) ? 0 : n;
+}
 async function getNextFolio() {
-  // Sincronizar con el folio más alto de las cotizaciones existentes
   const lista = await getCotizaciones();
   const folioStorage = (await storageGet('folio') || { last: 243 }).last;
   const folioMaxCots = lista.reduce((max, c) => {
-    const n = parseInt(c.folio);
-    return !isNaN(n) && n > max ? n : max;
+    const n = parseFolio(c.folio);
+    return n > max ? n : max;
   }, 0);
   const folioMax = Math.max(folioStorage, folioMaxCots, 243);
-  // Actualizar storage si el máximo de cots es mayor
   if (folioMaxCots > folioStorage) {
     await storageSet('folio', { last: folioMaxCots });
   }
@@ -1158,8 +1163,8 @@ async function incrementFolio() {
   const lista = await getCotizaciones();
   const folioStorage = (await storageGet('folio') || { last: 243 }).last;
   const folioMaxCots = lista.reduce((max, c) => {
-    const n = parseInt(c.folio);
-    return !isNaN(n) && n > max ? n : max;
+    const n = parseFolio(c.folio);
+    return n > max ? n : max;
   }, 0);
   const folioActual = Math.max(folioStorage, folioMaxCots, 243);
   await storageSet('folio', { last: folioActual + 1 });
@@ -1249,7 +1254,18 @@ async function recoverCotizacionesFromSheets() {
   try {
     const res = await sheetsRequest({ action: 'load' });
     if (res && res.cotizaciones && res.cotizaciones.length > 0) {
-      await saveCotizaciones(res.cotizaciones);
+      // Normalizar folios: "TEC-0247" → 247
+      const normalized = res.cotizaciones.map(c => ({
+        ...c,
+        folio: parseFolio(c.folio) || c.folio
+      }));
+      // Fusionar con local — conservar los locales si tienen más datos
+      const local = await getCotizaciones();
+      const localFolios = new Set(local.map(c => String(parseFolio(c.folio))));
+      const nuevas = normalized.filter(c => !localFolios.has(String(parseFolio(c.folio))));
+      const merged = [...local, ...nuevas].sort((a,b) => parseFolio(b.folio) - parseFolio(a.folio));
+      await saveCotizaciones(merged);
+      console.log('✅ Sheets sincronizado:', merged.length, 'cotizaciones');
     }
   } catch(e) {
     console.warn('No se pudo sincronizar con Sheets:', e.message);
