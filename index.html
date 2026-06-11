@@ -2934,18 +2934,33 @@ async function seleccionarCliente(nombre) {
   // Construir mapa: clave producto → todas las apariciones
   const mapaProductos = {};
   cots.forEach(cot => {
-    const folio = 'TEC-' + String(cot.folio).padStart(4,'0');
-    const fecha = cot.fecha || '';
+    const folio  = 'TEC-' + String(cot.folio).padStart(4,'0');
+    const fecha  = cot.fecha || '';
     const moneda = cot.moneda || 'MXN';
+    const tc     = parseFloat(cot.tc) || 17.5;
     (cot.productos || []).forEach(p => {
-      if (!p.modelo) return;
-      const key = p.clave || p.modelo;
-      if (!mapaProductos[key]) mapaProductos[key] = { modelo: p.modelo, clave: p.clave || '', apariciones: [] };
+      const modeloKey = p.modelo || p.nombre || '';
+      if (!modeloKey) return;
+      const claveKey  = p.clave || '';
+      const key       = claveKey || modeloKey;
+      const pvp       = parseFloat(p.pvp_final || p.pvp) || 0;
+
+      // Calcular margen al vuelo si no está guardado
+      let margen = parseFloat(p.margen) || 0;
+      if (!margen && pvp > 0) {
+        const prodCat = PRODUCTOS.find(x => (x.modelo === modeloKey) || (x.clave === claveKey));
+        if (prodCat?.costo) {
+          const costoMXN = moneda === 'USD' ? prodCat.costo * tc : (p.moneda_prod === 'USD' ? prodCat.costo * tc : prodCat.costo);
+          margen = (pvp - costoMXN) / pvp * 100;
+        }
+      }
+
+      if (!mapaProductos[key]) mapaProductos[key] = { modelo: modeloKey, clave: claveKey, apariciones: [] };
       mapaProductos[key].apariciones.push({
         folio, fecha, moneda,
-        pvp:    parseFloat(p.pvp)    || 0,
-        margen: parseFloat(p.margen) || 0,
-        cotId:  cot.folio
+        pvp,
+        margen: isFinite(margen) ? margen : 0,
+        cotId: cot.folio
       });
     });
   });
