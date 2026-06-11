@@ -396,9 +396,14 @@
       </div>
     </div>
     <!-- Historial del cliente -->
-    <div id="historial-cliente" style="display:none;margin-top:14px;background:#F8F8F8;border-radius:8px;padding:14px;border:1px solid #E8E8E8;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#888;margin-bottom:10px;">📋 Cotizaciones anteriores de este cliente</div>
-      <div id="historial-lista"></div>
+    <div id="historial-cliente" style="display:none;margin-top:14px;background:#F8F8F8;border-radius:8px;border:1px solid #E8E8E8;overflow:hidden;">
+      <div onclick="toggleHistorial()" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;user-select:none;" onmouseover="this.style.background='#F0F0F0'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#888;">📋 Cotizaciones anteriores de este cliente</span>
+        <span id="historial-arrow" style="font-size:14px;color:#888;transition:transform .2s;">▲</span>
+      </div>
+      <div id="historial-body" style="padding:0 14px 14px;">
+        <div id="historial-lista"></div>
+      </div>
     </div>
   </div>
 
@@ -3019,6 +3024,15 @@ async function seleccionarCliente(nombre) {
   `;
 
   histDiv.style.display = 'block';
+}
+
+function toggleHistorial() {
+  const body  = document.getElementById('historial-body');
+  const arrow = document.getElementById('historial-arrow');
+  if (!body) return;
+  const visible = body.style.display !== 'none';
+  body.style.display  = visible ? 'none' : 'block';
+  arrow.textContent   = visible ? '▼' : '▲';
 }
 
 function cerrarSugerencias() {
