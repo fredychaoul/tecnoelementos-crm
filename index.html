@@ -386,6 +386,19 @@
         <label>Dirección</label>
         <input type="text" id="cli-direccion" placeholder="Opcional">
       </div>
+      <div class="form-group">
+        <label>Contacto</label>
+        <input type="text" id="cli-contacto" placeholder="Ej. Arq. Laura Gómez">
+      </div>
+      <div class="form-group">
+        <label>WhatsApp del Contacto</label>
+        <input type="text" id="cli-whatsapp" placeholder="Ej. 5512345678">
+      </div>
+    </div>
+    <!-- Historial del cliente -->
+    <div id="historial-cliente" style="display:none;margin-top:14px;background:#F8F8F8;border-radius:8px;padding:14px;border:1px solid #E8E8E8;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#888;margin-bottom:10px;">📋 Cotizaciones anteriores de este cliente</div>
+      <div id="historial-lista"></div>
     </div>
   </div>
 
@@ -1683,6 +1696,8 @@ function recopilarDatos() {
     ciudad:      document.getElementById('cli-ciudad').value,
     proyecto:    document.getElementById('cli-proyecto').value,
     direccion:   document.getElementById('cli-direccion').value,
+    contacto:    document.getElementById('cli-contacto').value,
+    whatsapp:    document.getElementById('cli-whatsapp').value,
     moneda, tc, simbolo,
     flete_escenario: fleteEsc,
     flete:       fleteEsc !== 'no',
@@ -2499,6 +2514,8 @@ async function editarCotizacion() {
   document.getElementById('cli-ciudad').value    = cot.ciudad     || '';
   document.getElementById('cli-proyecto').value  = cot.proyecto   || '';
   document.getElementById('cli-direccion').value = cot.direccion  || '';
+  document.getElementById('cli-contacto').value  = cot.contacto   || '';
+  document.getElementById('cli-whatsapp').value  = cot.whatsapp   || '';
   document.getElementById('observaciones').value = cot.observaciones || '';
 
   // ── Condiciones
@@ -2892,10 +2909,55 @@ async function sugerirCliente(val) {
   dd.style.display = 'block';
 }
 
-function seleccionarCliente(nombre) {
+async function seleccionarCliente(nombre) {
   const input = document.getElementById('cli-nombre');
   if (input) input.value = nombre;
   cerrarSugerencias();
+
+  const lista = await getCotizaciones();
+  const cots = lista.filter(c => c.cliente === nombre).sort((a,b) => b.folio - a.folio);
+
+  // Autocompletar contacto y whatsapp con el más reciente que los tenga
+  const conContacto = cots.find(c => c.contacto);
+  if (conContacto) {
+    const campoC = document.getElementById('cli-contacto');
+    const campoW = document.getElementById('cli-whatsapp');
+    if (campoC && !campoC.value) campoC.value = conContacto.contacto || '';
+    if (campoW && !campoW.value) campoW.value = conContacto.whatsapp || '';
+  }
+
+  // Mostrar historial
+  const histDiv  = document.getElementById('historial-cliente');
+  const histLista = document.getElementById('historial-lista');
+  if (!histDiv || !histLista) return;
+
+  const recientes = cots.slice(0, 5);
+  if (recientes.length === 0) { histDiv.style.display = 'none'; return; }
+
+  const simbolo = (c) => c.moneda === 'USD' ? 'USD ' : '$';
+  histLista.innerHTML = recientes.map(c => {
+    const folio  = 'TEC-' + String(c.folio).padStart(4,'0');
+    const monto  = simbolo(c) + (c.total || 0).toLocaleString('es-MX', {minimumFractionDigits:2});
+    const fecha  = c.fecha || '';
+    const proy   = c.proyecto ? ` — ${c.proyecto}` : '';
+    const margen = c.margenPromedio ? ` · ${c.margenPromedio}% mg` : '';
+    const estatus = c.estatus || 'Pendiente';
+    const colorBadge = estatus === 'Ganado' ? '#D4EDDA;color:#155724' : estatus === 'Perdido' ? '#F8D7DA;color:#721C24' : '#FFF3CD;color:#856404';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #EEE;font-size:12px;">
+      <div>
+        <span style="font-weight:700;color:#1A1A1A;">${folio}</span>
+        <span style="color:#555;">${proy}</span>
+        <span style="color:#888;font-size:11px;">${margen}</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span style="font-weight:600;">${monto}</span>
+        <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${colorBadge};">${estatus}</span>
+        <span style="color:#AAA;font-size:11px;">${fecha}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  histDiv.style.display = 'block';
 }
 
 function cerrarSugerencias() {
@@ -2995,9 +3057,11 @@ function actualizarAvisoInstalacion() {
 
 // ═══════════════════ INSTALACIÓN ═══════════════════
 function limpiarFormulario() {
-  ['cli-nombre','cli-ciudad','cli-proyecto','cli-direccion','observaciones'].forEach(id => {
+  ['cli-nombre','cli-ciudad','cli-proyecto','cli-direccion','cli-contacto','cli-whatsapp','observaciones'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  const histDiv = document.getElementById('historial-cliente');
+  if (histDiv) histDiv.style.display = 'none';
   document.getElementById('productos-body').innerHTML = '';
   document.getElementById('inst-body').innerHTML = '';
   const instIva = document.getElementById('inst-iva');
