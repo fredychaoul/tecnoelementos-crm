@@ -2062,7 +2062,8 @@ async function generarPDF(cotData) {
     }
     const nomLines = doc.splitTextToSize(p.nombre,  wNom).length;
     const clvLines = doc.splitTextToSize(p.clave||'', wClv).length;
-    const fmtLines = doc.splitTextToSize(p.formato||'', wFmt).length;
+    const fmtLimpio = (p.formato||'').replace(/[·|]?\s*Par obligatorio/gi, '').trim();
+    const fmtLines = doc.splitTextToSize(fmtLimpio, wFmt).length;
     const nLines   = Math.max(nomLines, clvLines, fmtLines, 1);
     const rh       = Math.max(MIN_H, nLines * LINE_H + PAD * 2);
 
@@ -2082,7 +2083,7 @@ async function generarPDF(cotData) {
 
     // FORMATO — normal
     doc.setFontSize(6.5); doc.setTextColor(60,60,60);
-    doc.text(p.formato||'', cols[2]+2, ty, {maxWidth: wFmt});
+    doc.text(fmtLimpio, cols[2]+2, ty, {maxWidth: wFmt});
 
     // CANT centrado
     doc.setTextColor(26,26,26); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
