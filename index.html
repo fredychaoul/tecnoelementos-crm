@@ -3197,14 +3197,26 @@ const OBRA_TIPOS = [
   { key:'otros',      label:'Otros (molduras/levant.)', icon:'➕' },
 ];
 
-// Mapea la clave del servicio de instalación de la cotización a un tipo de avance
-function obraClaveATipo(clave) {
-  const c = String(clave || '').toUpperCase();
-  if (c.startsWith('ANV'))    return 'nivelacion';
-  if (c === 'INST-SPC' || c === 'INST-SPC-HB' || c === 'INST-MAD' || c === 'INST-MAD-HB') return 'piso';
-  if (c === 'INST-MURO')      return 'muro';
-  if (c === 'INST-PLAFON' || c === 'INST-MDF') return 'plafon';
-  return 'otros'; // INST-MOLD, LEVANT-*, etc.
+// Mapea un servicio de instalación de la cotización a un tipo de avance.
+// Soporta tanto cotizaciones nuevas (con 'clave') como viejas (solo 'servicio'/'nombre').
+function obraTipoDeServicio(item) {
+  const c = String(item.clave || '').toUpperCase();
+  if (c) {
+    if (c.startsWith('ANV'))    return 'nivelacion';
+    if (c === 'INST-SPC' || c === 'INST-SPC-HB' || c === 'INST-MAD' || c === 'INST-MAD-HB') return 'piso';
+    if (c === 'INST-MURO')      return 'muro';
+    if (c === 'INST-PLAFON' || c === 'INST-MDF') return 'plafon';
+    if (c === 'INST-MOLD' || c.startsWith('LEVANT')) return 'otros';
+  }
+  // Fallback por nombre (cotizaciones históricas sin 'clave')
+  const n = String(item.servicio || item.nombre || '').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '');
+  if (n.includes('nivel'))   return 'nivelacion';            // autonivelante / nivelación
+  if (n.includes('muro'))    return 'muro';
+  if (n.includes('plafon'))  return 'plafon';
+  if (n.includes('moldura') || n.includes('levant') || n.includes('zoclo')) return 'otros';
+  if (n.includes('instal'))  return 'piso';                  // instalación SPC / madera / piso
+  return 'otros';
 }
 
 function obraEsM2(unidad) {
@@ -3222,7 +3234,7 @@ function obraSuministroContratado(cot) {
 function obraDetectarManoObra(cot) {
   const m = {};
   (cot.instalacion || []).forEach(i => {
-    const tipo = obraClaveATipo(i.clave);
+    const tipo = obraTipoDeServicio(i);
     m[tipo] = (m[tipo] || 0) + (parseFloat(i.cantidad)||0);
   });
   return m;
@@ -3256,6 +3268,29 @@ function obraResumen(cot) {
   return { estadoGlobal, avgPct };
 }
 
+// Guarda TODO en local, pero sincroniza a Sheets SOLO la cotización editada
+// (evita reenviar las decenas de cotizaciones en cada cambio de avance).
+async function obraGuardar(lista, cot) {
+  await saveCotizaciones(lista, true); // skipSheets = true: no resincroniza todo
+  if (typeof sheetsRequest === 'function' && cot) {
+    sheetsRequest({
+      action:      'save',
+      perfil:      'B2B',
+      folio:       'TEC-' + String(cot.folio).padStart(4,'0'),
+      fecha:       cot.fecha || '',
+      cliente:     cot.cliente || '',
+      ciudad:      cot.ciudad || '',
+      proyecto:    cot.proyecto || '',
+      productos:   (cot.productos || []).map(p => p.nombre || p.clave || '').join(', '),
+      total:       cot.total || '',
+      moneda:      cot.moneda || 'USD',
+      estatus:     cot.status || 'Pendiente',
+      instalacion: (cot.instalacion || []).length > 0 ? 'Sí' : 'No',
+      json:        JSON.stringify(cot)
+    }); // fire-and-forget
+  }
+}
+
 // ── Activar / retirar obra ──────────────────────────────────────────────
 async function obraActivar(folio) {
   const lista = await getCotizaciones();
@@ -3273,7 +3308,7 @@ async function obraActivar(folio) {
     manoObra,
     planoUrl: ''
   };
-  await saveCotizaciones(lista);
+  await obraGuardar(lista, cot);
   mostrarToast('Obra activada — TEC-' + String(cot.folio).padStart(4,'0'), 'success');
   renderObra();
 }
@@ -3284,7 +3319,7 @@ async function obraDesactivar(folio) {
   const cot = lista.find(c => String(c.folio) === String(folio));
   if (!cot) return;
   delete cot.seguimiento;
-  await saveCotizaciones(lista);
+  await obraGuardar(lista, cot);
   mostrarToast('Obra retirada del seguimiento', 'info');
   renderObra();
 }
@@ -3295,7 +3330,7 @@ async function obraSetSuministrado(folio, val) {
   const cot = lista.find(c => String(c.folio) === String(folio));
   if (!cot || !cot.seguimiento) return;
   cot.seguimiento.suministro.suministrado = Math.max(0, parseFloat(val)||0);
-  await saveCotizaciones(lista);
+  await obraGuardar(lista, cot);
   renderObra();
 }
 
@@ -3304,7 +3339,7 @@ async function obraSetAvance(folio, tipo, val) {
   const cot = lista.find(c => String(c.folio) === String(folio));
   if (!cot || !cot.seguimiento || !cot.seguimiento.manoObra[tipo]) return;
   cot.seguimiento.manoObra[tipo].avance_pct = Math.max(0, Math.min(100, parseFloat(val)||0));
-  await saveCotizaciones(lista);
+  await obraGuardar(lista, cot);
   renderObra();
 }
 
