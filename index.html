@@ -3555,6 +3555,69 @@ async function obraImportarLista(folio) {
   await obraCrearUnidadesDesde(folio, nombres);
 }
 
+// ── Captura con IA (función serverless /api/mapa-ia) ──────────────────────
+const obraIAResultado = {};
+
+function obraFileABase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const m = String(r.result).match(/^data:(.*?);base64,(.*)$/);
+      m ? resolve({ mediaType: m[1], data: m[2] }) : reject(new Error('formato'));
+    };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+async function obraIAAnalizar(folio) {
+  const desc = (document.getElementById('obra-ia-desc-' + folio)?.value || '').trim();
+  const fileInput = document.getElementById('obra-ia-file-' + folio);
+  const file = fileInput?.files?.[0];
+  const prev = document.getElementById('obra-ia-prev-' + folio);
+  if (!desc && !file) { mostrarToast('Sube un plano o escribe una descripción', 'info'); return; }
+  prev.innerHTML = '⏳ Analizando con IA…';
+
+  const payload = { descripcion: desc };
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) { prev.innerHTML = '⚠️ La imagen supera 5 MB, redúcela.'; return; }
+    try { const b = await obraFileABase64(file); payload.imagen = b.data; payload.mediaType = b.mediaType; }
+    catch { prev.innerHTML = '❌ No se pudo leer la imagen.'; return; }
+  }
+
+  try {
+    const r = await fetch('/api/mapa-ia', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+    if (!data.ok) {
+      prev.innerHTML = data.error === 'no_configurada'
+        ? '⚠️ IA no configurada. Falta <strong>ANTHROPIC_API_KEY</strong> en las variables de entorno de Vercel.'
+        : '❌ ' + (data.error || 'No se pudo analizar');
+      return;
+    }
+    obraIAResultado[folio] = data;
+    const muestra = data.unidades.slice(0, 8).join(', ') + (data.unidades.length > 8 ? '…' : '');
+    prev.innerHTML = `
+    <div style="background:#E3F4E9;border:1px solid #1E6B3C33;border-radius:8px;padding:10px 12px;font-size:12px">
+      Detecté <strong>${data.unidades.length} × ${data.unidadLabel}</strong>: ${muestra}
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="obra-btn" onclick="obraIAConfirmar('${folio}')" style="background:#1E6B3C;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">✓ Crear ${data.unidades.length} unidades</button>
+        <button onclick="document.getElementById('obra-ia-prev-${folio}').innerHTML=''" style="background:none;border:1px solid #ccc;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer">Descartar</button>
+      </div>
+    </div>`;
+  } catch (e) {
+    prev.innerHTML = '❌ No se pudo contactar la IA (la función /api solo existe en el deploy de Vercel, no en el preview local).';
+  }
+}
+
+async function obraIAConfirmar(folio) {
+  const data = obraIAResultado[folio];
+  if (!data) return;
+  await obraCrearUnidadesDesde(folio, data.unidades, data.unidadLabel);
+  delete obraIAResultado[folio];
+}
+
 function obraMapaHTML(cot) {
   const folio = cot.folio;
   const vol = obraVolumenDe(cot);
@@ -3621,6 +3684,15 @@ function obraMapaHTML(cot) {
       <div style="display:flex;gap:8px;margin-top:6px">
         <textarea id="obra-lista-${folio}" rows="3" placeholder="Depto 101, Depto 102, PH..." class="obra-input" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;resize:vertical"></textarea>
         <button class="obra-btn" onclick="obraImportarLista('${folio}')" style="background:#1A1A1A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;align-self:flex-start">Importar</button>
+      </div>
+    </details>
+    <details style="margin-bottom:8px">
+      <summary style="font-size:11px;color:#1E6B3C;font-weight:600;cursor:pointer">✨ Cargar con IA (foto del plano o descripción)</summary>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+        <input type="file" id="obra-ia-file-${folio}" accept="image/*" style="font-size:12px">
+        <textarea id="obra-ia-desc-${folio}" rows="2" placeholder="o describe: 'torre de 20 niveles, 4 deptos por piso, más 2 PH'" class="obra-input" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;resize:vertical"></textarea>
+        <button class="obra-btn" onclick="obraIAAnalizar('${folio}')" style="background:#1E6B3C;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;align-self:flex-start">✨ Analizar con IA</button>
+        <div id="obra-ia-prev-${folio}" style="font-size:12px"></div>
       </div>
     </details>
     ${unidadesHTML}
