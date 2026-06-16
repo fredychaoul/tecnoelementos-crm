@@ -601,6 +601,7 @@
     .obra-fila:hover { box-shadow:0 4px 14px rgba(0,0,0,.07); border-color:#ddd; transform:translateY(-1px); }
     .obra-detalle { margin:-2px 0 14px; animation: obraIn .3s ease both; }
     .obra-detalle > .obra-card { margin-bottom:0; }
+    .obra-fecha { border:1px solid #ddd; border-radius:5px; padding:2px 5px; font-size:11px; font-family:inherit; color:#555; }
   </style>
   <div class="stats" style="grid-template-columns:repeat(4,1fr)">
     <div class="stat"><div class="label">Obras Activas</div><div class="value" id="obra-stat-activas">0</div></div>
@@ -3310,6 +3311,7 @@ function obraResumen(cot) {
 // Guarda TODO en local, pero sincroniza a Sheets SOLO la cotización editada
 // (evita reenviar las decenas de cotizaciones en cada cambio de avance).
 async function obraGuardar(lista, cot) {
+  if (cot && cot.seguimiento) obraActualizarFechasAuto(cot); // marca inicio/fin reales
   await saveCotizaciones(lista, true); // skipSheets = true: no resincroniza todo
   if (typeof sheetsRequest === 'function' && cot) {
     sheetsRequest({
@@ -3346,7 +3348,8 @@ async function obraActivar(folio) {
     suministro: { contratado: Math.round(obraSuministroContratado(cot)*100)/100, suministrado: 0 },
     manoObra,
     volumen: { activo: false, unidadLabel: 'Nivel', unidades: [] },
-    estimaciones: []
+    estimaciones: [],
+    fechas: { inicioProg:'', finProg:'', inicioReal:'', finReal:'' }
   };
   await obraGuardar(lista, cot);
   mostrarToast('Obra activada — TEC-' + String(cot.folio).padStart(4,'0'), 'success');
@@ -3624,6 +3627,87 @@ function obraMapaHTML(cot) {
   </div>`;
 }
 
+// ── Fechas y atraso ───────────────────────────────────────────────────────
+function obraHoy() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+// Marca inicio real (primer avance) y fin real (al 100%) en obra y por partida
+function obraActualizarFechasAuto(cot) {
+  const s = cot.seguimiento;
+  if (!s.fechas) s.fechas = { inicioProg:'', finProg:'', inicioReal:'', finReal:'' };
+  const hoy = obraHoy();
+  const tocar = (obj, pct) => {
+    ['inicioProg','finProg','inicioReal','finReal'].forEach(k => { if (obj[k] === undefined) obj[k] = ''; });
+    if (pct > 0 && !obj.inicioReal) obj.inicioReal = hoy;
+    if (pct >= 100) { if (!obj.finReal) obj.finReal = hoy; } else { obj.finReal = ''; }
+  };
+  tocar(s.suministro, obraPct(s.suministro.suministrado, s.suministro.contratado));
+  Object.keys(s.manoObra || {}).forEach(t => tocar(s.manoObra[t], s.manoObra[t].avance_pct || 0));
+  // obra completa
+  const algoIniciado = obraPct(s.suministro.suministrado, s.suministro.contratado) > 0 ||
+    Object.keys(s.manoObra || {}).some(t => (s.manoObra[t].avance_pct||0) > 0);
+  if (algoIniciado && !s.fechas.inicioReal) s.fechas.inicioReal = hoy;
+  if (obraEstaTerminada(cot)) { if (!s.fechas.finReal) s.fechas.finReal = hoy; } else { s.fechas.finReal = ''; }
+}
+
+// Badge de atraso comparando fin programado vs fin real (o vs hoy si no ha terminado)
+function obraAtrasoBadge(finProg, finReal) {
+  if (!finProg) return '';
+  const d = Math.round((Date.parse(finReal || obraHoy()) - Date.parse(finProg)) / 86400000);
+  const pill = (txt, color, bg) => `<span style="background:${bg};color:${color};padding:1px 8px;border-radius:9px;font-size:10px;font-weight:700;white-space:nowrap">${txt}</span>`;
+  if (finReal) return d <= 0 ? pill('entregó a tiempo','#1E6B3C','#E3F4E9') : pill('entregó '+d+'d tarde','#8B2020','#FBE3E3');
+  if (d > 0)   return pill('atrasada '+d+'d','#8B2020','#FBE3E3');
+  if (d === 0) return pill('vence hoy','#9A6B00','#FBF3DD');
+  return pill('faltan '+(-d)+'d','#1E6B3C','#E3F4E9');
+}
+
+async function obraSetFecha(folio, campo, val) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  if (!cot.seguimiento.fechas) cot.seguimiento.fechas = { inicioProg:'', finProg:'', inicioReal:'', finReal:'' };
+  cot.seguimiento.fechas[campo] = val || '';
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
+async function obraSetFechaPartida(folio, tipo, campo, val) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  const obj = tipo === 'suministro' ? cot.seguimiento.suministro : (cot.seguimiento.manoObra||{})[tipo];
+  if (!obj) return;
+  obj[campo] = val || '';
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
+function obraFechasObraHTML(cot) {
+  const f = cot.seguimiento.fechas || {};
+  return `
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:#FAFAFA;border-radius:8px">
+    <span style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px">📅 Fechas</span>
+    <label style="font-size:11px;color:#999;display:flex;align-items:center;gap:4px">Inicio prog <input type="date" value="${f.inicioProg||''}" onchange="obraSetFecha('${cot.folio}','inicioProg',this.value)" class="obra-fecha"></label>
+    <label style="font-size:11px;color:#999;display:flex;align-items:center;gap:4px">Fin prog <input type="date" value="${f.finProg||''}" onchange="obraSetFecha('${cot.folio}','finProg',this.value)" class="obra-fecha"></label>
+    <span style="font-size:11px;color:#888">Real: ${f.inicioReal||'—'} → ${f.finReal||'…'}</span>
+    ${obraAtrasoBadge(f.finProg, f.finReal)}
+  </div>`;
+}
+
+function obraFechasPartidaHTML(folio, tipo, obj) {
+  return `
+  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:4px 0 2px;font-size:11px;color:#aaa">
+    <span>📅 prog</span>
+    <input type="date" value="${obj.inicioProg||''}" onchange="obraSetFechaPartida('${folio}','${tipo}','inicioProg',this.value)" class="obra-fecha">
+    <span>→</span>
+    <input type="date" value="${obj.finProg||''}" onchange="obraSetFechaPartida('${folio}','${tipo}','finProg',this.value)" class="obra-fecha">
+    ${(obj.inicioReal||obj.finReal) ? `<span style="color:#999">· real ${obj.inicioReal||'…'} → ${obj.finReal||'…'}</span>` : ''}
+    ${obraAtrasoBadge(obj.finProg, obj.finReal)}
+  </div>`;
+}
+
 // ── Estimación por periodo ────────────────────────────────────────────────
 // Importe contratado del suministro = Σ totales de productos vendidos en M²
 function obraImporteSuministro(cot) {
@@ -3804,11 +3888,12 @@ function obraFilaCompactaHTML(cot) {
     <span style="display:flex;gap:4px;align-items:center;flex:none">${dots.join('')}</span>
     <span style="width:90px;flex:none"><span class="obra-bar-track" style="height:7px;display:block"><span class="obra-bar-fill" style="background:${gColor};width:${res.avgPct}%;display:block"></span></span></span>
     <span class="obra-pill" style="background:${gColor};color:#fff;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap;flex:none">${res.avgPct}%</span>
+    ${obraAtrasoBadge((s.fechas||{}).finProg, (s.fechas||{}).finReal)}
   </div>`;
 }
 
 // ── Render ──────────────────────────────────────────────────────────────
-function obraBarraHTML(label, pct, est, rightHTML) {
+function obraBarraHTML(label, pct, est, rightHTML, extraHTML) {
   return `
   <div style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;gap:10px;flex-wrap:wrap">
@@ -3821,6 +3906,7 @@ function obraBarraHTML(label, pct, est, rightHTML) {
     <div class="obra-bar-track">
       <div class="obra-bar-fill" style="background:${est.color};width:${pct}%"></div>
     </div>
+    ${extraHTML || ''}
   </div>`;
 }
 
@@ -3833,7 +3919,8 @@ function obraCardHTML(cot) {
 
   const supPct = obraPct(s.suministro.suministrado, s.suministro.contratado);
   const supBar = obraBarraHTML('📦 Suministro de material', supPct, obraEstado(supPct),
-    `<input type="number" min="0" step="0.01" value="${s.suministro.suministrado}" onchange="obraSetSuministrado('${folio}', this.value)" class="obra-input" style="width:90px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;text-align:right"> / ${s.suministro.contratado.toLocaleString('es-MX')} m²`);
+    `<input type="number" min="0" step="0.01" value="${s.suministro.suministrado}" onchange="obraSetSuministrado('${folio}', this.value)" class="obra-input" style="width:90px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;text-align:right"> / ${s.suministro.contratado.toLocaleString('es-MX')} m²`,
+    obraFechasPartidaHTML(folio, 'suministro', s.suministro));
 
   const manoKeys = Object.keys(s.manoObra || {});
   const manoHTML = manoKeys.length === 0
@@ -3843,7 +3930,8 @@ function obraCardHTML(cot) {
         const pct = mo.avance_pct || 0;
         const tipo = OBRA_TIPOS.find(x => x.key === t) || { label:t, icon:'🔧' };
         return obraBarraHTML(tipo.icon + ' ' + tipo.label, pct, obraEstado(pct),
-          `<input type="number" min="0" max="100" step="1" value="${pct}" onchange="obraSetAvance('${folio}','${t}', this.value)" class="obra-input" style="width:62px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;text-align:right">% · ${mo.contratado.toLocaleString('es-MX')} m²`);
+          `<input type="number" min="0" max="100" step="1" value="${pct}" onchange="obraSetAvance('${folio}','${t}', this.value)" class="obra-input" style="width:62px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;text-align:right">% · ${mo.contratado.toLocaleString('es-MX')} m²`,
+          obraFechasPartidaHTML(folio, t, mo));
       }).join('');
 
   return `
@@ -3858,6 +3946,7 @@ function obraCardHTML(cot) {
         <div><button class="obra-retirar" onclick="obraDesactivar('${folio}')" style="background:none;border:none;color:#bbb;font-size:11px;cursor:pointer;margin-top:6px">retirar</button></div>
       </div>
     </div>
+    ${obraFechasObraHTML(cot)}
     ${supBar}
     <div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">
       <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Avance de mano de obra</div>
