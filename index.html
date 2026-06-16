@@ -3345,7 +3345,8 @@ async function obraActivar(folio) {
     fechaActivacion: new Date().toISOString(),
     suministro: { contratado: Math.round(obraSuministroContratado(cot)*100)/100, suministrado: 0 },
     manoObra,
-    volumen: { activo: false, unidadLabel: 'Nivel', unidades: [] }
+    volumen: { activo: false, unidadLabel: 'Nivel', unidades: [] },
+    estimaciones: []
   };
   await obraGuardar(lista, cot);
   mostrarToast('Obra activada — TEC-' + String(cot.folio).padStart(4,'0'), 'success');
@@ -3551,6 +3552,133 @@ function obraMapaHTML(cot) {
   </div>`;
 }
 
+// ── Estimación por periodo ────────────────────────────────────────────────
+// Importe contratado del suministro = Σ totales de productos vendidos en M²
+function obraImporteSuministro(cot) {
+  return (cot.productos || [])
+    .filter(p => obraEsM2(p.unidad))
+    .reduce((s,p) => s + (parseFloat(p.total)||0), 0);
+}
+// Importe contratado de mano de obra por tipo = Σ totales de la instalación
+function obraImporteManoObraPorTipo(cot) {
+  const m = {};
+  (cot.instalacion || []).forEach(i => {
+    const t = obraTipoDeServicio(i);
+    m[t] = (m[t] || 0) + (parseFloat(i.total)||0);
+  });
+  return m;
+}
+// Conceptos con importe contratado, % avance e importe ejecutado
+function obraConceptos(cot) {
+  const s = cot.seguimiento;
+  const out = [];
+  const impSum = obraImporteSuministro(cot);
+  const supPct = obraPct(s.suministro.suministrado, s.suministro.contratado);
+  out.push({ concepto:'Suministro de material', contratado:impSum, avancePct:supPct, ejecutado: Math.round(impSum*supPct)/100 });
+  const impMO = obraImporteManoObraPorTipo(cot);
+  Object.keys(s.manoObra || {}).forEach(t => {
+    const imp = impMO[t] || 0;
+    const pct = s.manoObra[t].avance_pct || 0;
+    const tipo = OBRA_TIPOS.find(x => x.key === t) || { label:t };
+    out.push({ concepto: tipo.label, contratado: imp, avancePct: pct, ejecutado: Math.round(imp*pct)/100 });
+  });
+  return out;
+}
+function obraEjecutadoAcum(cot) { return Math.round(obraConceptos(cot).reduce((s,c)=>s+c.ejecutado,0)*100)/100; }
+function obraYaEstimado(cot)   { return Math.round((cot.seguimiento.estimaciones||[]).reduce((s,e)=>s+(e.montoPeriodo||0),0)*100)/100; }
+
+async function obraGenerarEstimacion(folio) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  if (!cot.seguimiento.estimaciones) cot.seguimiento.estimaciones = [];
+  const acum = obraEjecutadoAcum(cot);
+  const periodo = Math.round((acum - obraYaEstimado(cot))*100)/100;
+  if (periodo <= 0) { mostrarToast('No hay avance nuevo por estimar desde la última', 'info'); return; }
+  const num = cot.seguimiento.estimaciones.length + 1;
+  cot.seguimiento.estimaciones.push({
+    num, fecha: new Date().toLocaleDateString('es-MX'),
+    montoPeriodo: periodo, montoAcumulado: acum,
+    conceptos: obraConceptos(cot).map(c => ({ concepto:c.concepto, avancePct:c.avancePct, ejecutado:c.ejecutado }))
+  });
+  await obraGuardar(lista, cot);
+  mostrarToast('Estimación ' + num + ' generada', 'success');
+  renderObra();
+}
+
+async function obraEliminarEstimacion(folio) {
+  if (!confirm('¿Eliminar la última estimación?')) return;
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento || !(cot.seguimiento.estimaciones||[]).length) return;
+  cot.seguimiento.estimaciones.pop();
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
+async function obraCopiarEstimacion(folio) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot) return;
+  const rows = [['Concepto','Importe contratado','% avance','Importe ejecutado']];
+  obraConceptos(cot).forEach(c => rows.push([c.concepto, c.contratado.toFixed(2), c.avancePct + '%', c.ejecutado.toFixed(2)]));
+  (cot.seguimiento.estimaciones||[]).forEach(e => rows.push(['Estimación ' + e.num + ' (' + e.fecha + ')', '', '', e.montoPeriodo.toFixed(2)]));
+  const tsv = rows.map(r => r.join('\t')).join('\n');
+  try { await navigator.clipboard.writeText(tsv); mostrarToast('Tabla copiada — pégala en Excel', 'success'); }
+  catch(e) { mostrarToast('No se pudo copiar al portapapeles', 'error'); }
+}
+
+function obraEstimacionHTML(cot) {
+  const s = cot.seguimiento;
+  const sim = cot.simbolo || '$';
+  const fmt = n => sim + (Number(n)||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const conceptos = obraConceptos(cot);
+  const contratadoTotal = conceptos.reduce((a,c)=>a+c.contratado,0);
+  const acum = obraEjecutadoAcum(cot);
+  const porEstimar = Math.round((acum - obraYaEstimado(cot))*100)/100;
+  const ests = s.estimaciones || [];
+
+  const filasConc = conceptos.map(c => `<tr>
+      <td style="padding:4px 8px">${c.concepto}</td>
+      <td style="padding:4px 8px;text-align:right;color:#888">${fmt(c.contratado)}</td>
+      <td style="padding:4px 8px;text-align:right">${c.avancePct}%</td>
+      <td style="padding:4px 8px;text-align:right;font-weight:600">${fmt(c.ejecutado)}</td>
+    </tr>`).join('');
+
+  const filasEst = ests.length
+    ? ests.map(e => `<tr>
+        <td style="padding:3px 8px">Estimación ${e.num} · ${e.fecha}</td>
+        <td style="padding:3px 8px;text-align:right;color:#888" colspan="2">acum. ${fmt(e.montoAcumulado)}</td>
+        <td style="padding:3px 8px;text-align:right;font-weight:700;color:#1E6B3C">${fmt(e.montoPeriodo)}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="4" style="padding:6px 8px;color:#aaa;font-size:12px">Aún no generas estimaciones.</td></tr>`;
+
+  return `
+  <div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+      <span style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px">💵 Estimación</span>
+      <span style="font-size:12px;color:#555">Ejecutado a la fecha: <strong>${fmt(acum)}</strong> <span style="color:#aaa">de ${fmt(contratadoTotal)}</span></span>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px">
+      <thead><tr style="color:#888;font-size:10px;text-transform:uppercase;border-bottom:1px solid #eee">
+        <th style="text-align:left;padding:4px 8px;font-weight:600">Concepto</th>
+        <th style="text-align:right;padding:4px 8px;font-weight:600">Contratado</th>
+        <th style="text-align:right;padding:4px 8px;font-weight:600">% avance</th>
+        <th style="text-align:right;padding:4px 8px;font-weight:600">Ejecutado</th>
+      </tr></thead>
+      <tbody>${filasConc}</tbody>
+    </table>
+    <div style="background:#FAFAFA;border-radius:8px;padding:6px 4px;margin-bottom:10px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px"><tbody>${filasEst}</tbody></table>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <button class="obra-btn" onclick="event.stopPropagation();obraGenerarEstimacion('${cot.folio}')" style="background:#1E6B3C;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Generar estimación${porEstimar>0?` (${fmt(porEstimar)})`:''}</button>
+      <button class="obra-btn" onclick="event.stopPropagation();obraCopiarEstimacion('${cot.folio}')" style="background:none;border:1px solid #ccc;border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer">📋 Copiar para Excel</button>
+      ${ests.length?`<button onclick="event.stopPropagation();obraEliminarEstimacion('${cot.folio}')" style="background:none;border:none;color:#bbb;font-size:11px;cursor:pointer;margin-left:auto">eliminar última</button>`:''}
+    </div>
+  </div>`;
+}
+
 // ── Tablero compacto + archivado ──────────────────────────────────────────
 let obraExpandidas = new Set();
 
@@ -3663,6 +3791,7 @@ function obraCardHTML(cot) {
       <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Avance de mano de obra</div>
       ${manoHTML}
     </div>
+    ${obraEstimacionHTML(cot)}
     ${obraMapaHTML(cot)}
   </div>`;
 }
