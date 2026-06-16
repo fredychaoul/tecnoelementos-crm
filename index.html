@@ -342,7 +342,7 @@
   <div class="tabs">
     <div class="tab active" onclick="showPage('nueva')">+ Nueva Cotización</div>
     <div class="tab" onclick="showPage('crm')">📊 CRM / Historial</div>
-    
+    <div class="tab" onclick="showPage('obra')">🏗️ Seguimiento de Obra</div>
   </div>
 </nav>
 
@@ -566,6 +566,30 @@
       </select>
     </div>
     <div id="crm-container"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ SEGUIMIENTO DE OBRA ═══════════════════════════ -->
+<div id="page-obra" class="page">
+  <div class="stats" style="grid-template-columns:repeat(4,1fr)">
+    <div class="stat"><div class="label">Obras Activas</div><div class="value" id="obra-stat-activas">0</div></div>
+    <div class="stat"><div class="label">Completas</div><div class="value" id="obra-stat-completas">0</div></div>
+    <div class="stat"><div class="label">En Proceso</div><div class="value" id="obra-stat-proceso">0</div></div>
+    <div class="stat"><div class="label">Por Iniciar</div><div class="value" id="obra-stat-pendientes">0</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Obras en Seguimiento</h2>
+    <div class="search-bar">
+      <input type="text" id="obra-search" placeholder="🔍  Buscar por cliente, folio, proyecto..." oninput="renderObra()">
+    </div>
+    <div id="obra-activas-container"></div>
+  </div>
+
+  <div class="card">
+    <h2>Cotizaciones Listas para Activar</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:16px">Cotizaciones ganadas o con material/instalación que aún no están en seguimiento. Al activar, se detectan automáticamente los m² y las partidas de mano de obra.</p>
+    <div id="obra-disponibles-container"></div>
   </div>
 </div>
 
@@ -1355,7 +1379,7 @@ function showPage(page) {
   document.getElementById('page-' + page).classList.add('active');
   event.target.classList.add('active');
   if (page === 'crm') renderCRM();
-  
+  if (page === 'obra') renderObra();
 }
 
 // ═══════════════════ PRODUCTOS ═══════════════════
@@ -3160,6 +3184,234 @@ window.addEventListener('unhandledrejection', function(e) {
   if (div) { div.style.display='block'; div.textContent = '❌ Error async: ' + msg; }
 });
 init();
+</script>
+
+<!-- ═══════════════════ MÓDULO: SEGUIMIENTO DE OBRA ═══════════════════ -->
+<script>
+// Tipos de mano de obra que se rastrean, en orden de aparición
+const OBRA_TIPOS = [
+  { key:'nivelacion', label:'Nivelación',              icon:'🪨' },
+  { key:'piso',       label:'Instalación de piso',     icon:'🔲' },
+  { key:'muro',       label:'Instalación de muro',     icon:'🧱' },
+  { key:'plafon',     label:'Plafón',                  icon:'⬆️' },
+  { key:'otros',      label:'Otros (molduras/levant.)', icon:'➕' },
+];
+
+// Mapea la clave del servicio de instalación de la cotización a un tipo de avance
+function obraClaveATipo(clave) {
+  const c = String(clave || '').toUpperCase();
+  if (c.startsWith('ANV'))    return 'nivelacion';
+  if (c === 'INST-SPC' || c === 'INST-SPC-HB' || c === 'INST-MAD' || c === 'INST-MAD-HB') return 'piso';
+  if (c === 'INST-MURO')      return 'muro';
+  if (c === 'INST-PLAFON' || c === 'INST-MDF') return 'plafon';
+  return 'otros'; // INST-MOLD, LEVANT-*, etc.
+}
+
+function obraEsM2(unidad) {
+  return String(unidad || '').toUpperCase().replace('²','2') === 'M2';
+}
+
+// m² de material contratado = suma de cantidades de los productos vendidos en M²
+function obraSuministroContratado(cot) {
+  return (cot.productos || [])
+    .filter(p => obraEsM2(p.unidad))
+    .reduce((s,p) => s + (parseFloat(p.cantidad)||0), 0);
+}
+
+// Detecta partidas de mano de obra (y sus m² contratados) desde la instalación
+function obraDetectarManoObra(cot) {
+  const m = {};
+  (cot.instalacion || []).forEach(i => {
+    const tipo = obraClaveATipo(i.clave);
+    m[tipo] = (m[tipo] || 0) + (parseFloat(i.cantidad)||0);
+  });
+  return m;
+}
+
+function obraLlevaManoObra(cot) {
+  return (cot.instalacion || []).length > 0;
+}
+
+function obraPct(parte, total) {
+  if (!total || total <= 0) return 0;
+  return Math.min(100, Math.round((parte/total)*100));
+}
+
+function obraEstado(pct) {
+  if (pct >= 100) return { txt:'Completo',  color:'#1E6B3C', bg:'#E3F4E9' };
+  if (pct > 0)    return { txt:'Parcial',   color:'#9A6B00', bg:'#FBF3DD' };
+  return            { txt:'Pendiente', color:'#8B2020', bg:'#FBE3E3' };
+}
+
+// Resumen global de una obra (para el semáforo y los stats)
+function obraResumen(cot) {
+  const s = cot.seguimiento;
+  const partidas = [{ pct: obraPct(s.suministro.suministrado, s.suministro.contratado), contratado: s.suministro.contratado }];
+  Object.keys(s.manoObra || {}).forEach(t => partidas.push({ pct: s.manoObra[t].avance_pct||0, contratado: s.manoObra[t].contratado }));
+  const conMeta = partidas.filter(p => p.contratado > 0);
+  const todas100 = conMeta.length > 0 && conMeta.every(p => p.pct >= 100);
+  const todas0   = conMeta.length > 0 && conMeta.every(p => p.pct <= 0);
+  const estadoGlobal = todas100 ? 'completo' : (todas0 ? 'pendiente' : 'proceso');
+  const avgPct = conMeta.length ? Math.round(conMeta.reduce((a,p)=>a+p.pct,0)/conMeta.length) : 0;
+  return { estadoGlobal, avgPct };
+}
+
+// ── Activar / retirar obra ──────────────────────────────────────────────
+async function obraActivar(folio) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot) return;
+  const detect = obraDetectarManoObra(cot);
+  const manoObra = {};
+  Object.keys(detect).forEach(tipo => {
+    manoObra[tipo] = { contratado: Math.round(detect[tipo]*100)/100, avance_pct: 0 };
+  });
+  cot.seguimiento = {
+    activa: true,
+    fechaActivacion: new Date().toISOString(),
+    suministro: { contratado: Math.round(obraSuministroContratado(cot)*100)/100, suministrado: 0 },
+    manoObra,
+    planoUrl: ''
+  };
+  await saveCotizaciones(lista);
+  mostrarToast('Obra activada — TEC-' + String(cot.folio).padStart(4,'0'), 'success');
+  renderObra();
+}
+
+async function obraDesactivar(folio) {
+  if (!confirm('¿Retirar esta obra del seguimiento? El avance capturado se perderá.')) return;
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot) return;
+  delete cot.seguimiento;
+  await saveCotizaciones(lista);
+  mostrarToast('Obra retirada del seguimiento', 'info');
+  renderObra();
+}
+
+// ── Edición de avance ───────────────────────────────────────────────────
+async function obraSetSuministrado(folio, val) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  cot.seguimiento.suministro.suministrado = Math.max(0, parseFloat(val)||0);
+  await saveCotizaciones(lista);
+  renderObra();
+}
+
+async function obraSetAvance(folio, tipo, val) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento || !cot.seguimiento.manoObra[tipo]) return;
+  cot.seguimiento.manoObra[tipo].avance_pct = Math.max(0, Math.min(100, parseFloat(val)||0));
+  await saveCotizaciones(lista);
+  renderObra();
+}
+
+// ── Render ──────────────────────────────────────────────────────────────
+function obraBarraHTML(label, pct, est, rightHTML) {
+  return `
+  <div style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;gap:10px;flex-wrap:wrap">
+      <span style="font-size:13px;font-weight:600">${label}</span>
+      <span style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;color:#666">${rightHTML}</span>
+        <span style="background:${est.bg};color:${est.color};padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap">${est.txt}</span>
+      </span>
+    </div>
+    <div style="background:#EEE;border-radius:6px;height:9px;overflow:hidden">
+      <div style="background:${est.color};height:100%;width:${pct}%;transition:width .3s"></div>
+    </div>
+  </div>`;
+}
+
+function obraCardHTML(cot) {
+  const s = cot.seguimiento;
+  const folio = cot.folio;
+  const res = obraResumen(cot);
+  const gColor = res.estadoGlobal==='completo' ? '#1E6B3C' : res.estadoGlobal==='pendiente' ? '#8B2020' : '#9A6B00';
+  const gTxt   = res.estadoGlobal==='completo' ? 'Completa' : res.estadoGlobal==='pendiente' ? 'Por iniciar' : 'En proceso';
+
+  const supPct = obraPct(s.suministro.suministrado, s.suministro.contratado);
+  const supBar = obraBarraHTML('📦 Suministro de material', supPct, obraEstado(supPct),
+    `<input type="number" min="0" step="0.01" value="${s.suministro.suministrado}" onchange="obraSetSuministrado('${folio}', this.value)" style="width:90px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;text-align:right"> / ${s.suministro.contratado.toLocaleString('es-MX')} m²`);
+
+  const manoKeys = Object.keys(s.manoObra || {});
+  const manoHTML = manoKeys.length === 0
+    ? '<p style="font-size:12px;color:#aaa;margin:4px 0">Esta cotización no lleva mano de obra.</p>'
+    : manoKeys.map(t => {
+        const mo = s.manoObra[t];
+        const pct = mo.avance_pct || 0;
+        const tipo = OBRA_TIPOS.find(x => x.key === t) || { label:t, icon:'🔧' };
+        return obraBarraHTML(tipo.icon + ' ' + tipo.label, pct, obraEstado(pct),
+          `<input type="number" min="0" max="100" step="1" value="${pct}" onchange="obraSetAvance('${folio}','${t}', this.value)" style="width:62px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;text-align:right">% · ${mo.contratado.toLocaleString('es-MX')} m²`);
+      }).join('');
+
+  return `
+  <div class="card" style="border-left:5px solid ${gColor};padding:20px 24px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:12px">
+      <div>
+        <div style="font-weight:700;font-size:15px">TEC-${String(folio).padStart(4,'0')} · ${cot.cliente||'—'}</div>
+        <div style="font-size:12px;color:#888">${cot.proyecto || cot.ciudad || 'Sin proyecto'} · Activada ${new Date(s.fechaActivacion).toLocaleDateString('es-MX')}</div>
+      </div>
+      <div style="text-align:right">
+        <span style="background:${gColor};color:#fff;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap">${gTxt} · ${res.avgPct}%</span>
+        <div><button onclick="obraDesactivar('${folio}')" style="background:none;border:none;color:#bbb;font-size:11px;cursor:pointer;margin-top:6px">retirar</button></div>
+      </div>
+    </div>
+    ${supBar}
+    <div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">
+      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Avance de mano de obra</div>
+      ${manoHTML}
+    </div>
+  </div>`;
+}
+
+async function renderObra() {
+  const lista = await getCotizaciones();
+  const activas = lista.filter(c => c.seguimiento && c.seguimiento.activa);
+  const q = (document.getElementById('obra-search')?.value || '').toLowerCase();
+
+  let completas=0, proceso=0, pend=0;
+  activas.forEach(c => {
+    const e = obraResumen(c).estadoGlobal;
+    if (e === 'completo') completas++; else if (e === 'pendiente') pend++; else proceso++;
+  });
+  document.getElementById('obra-stat-activas').textContent    = activas.length;
+  document.getElementById('obra-stat-completas').textContent  = completas;
+  document.getElementById('obra-stat-proceso').textContent    = proceso;
+  document.getElementById('obra-stat-pendientes').textContent = pend;
+
+  const filtradas = activas.filter(c => !q || (c.cliente||'').toLowerCase().includes(q) ||
+    String(c.folio).includes(q) || (c.proyecto||'').toLowerCase().includes(q));
+  const cont = document.getElementById('obra-activas-container');
+  cont.innerHTML = filtradas.length === 0
+    ? `<div class="empty-state"><div class="icon">🏗️</div><p>No hay obras en seguimiento.<br>Activa una desde la lista de abajo.</p></div>`
+    : filtradas.sort((a,b)=>b.folio-a.folio).map(obraCardHTML).join('');
+
+  const disp = lista.filter(c => !c.esBorrador && !(c.seguimiento && c.seguimiento.activa) &&
+    (obraSuministroContratado(c) > 0 || obraLlevaManoObra(c)));
+  const dcont = document.getElementById('obra-disponibles-container');
+  if (disp.length === 0) {
+    dcont.innerHTML = `<div class="empty-state"><div class="icon">✅</div><p>Todas las cotizaciones con material ya están en seguimiento.</p></div>`;
+  } else {
+    dcont.innerHTML = `<table class="crm-table"><thead><tr>
+        <th>Folio</th><th>Cliente</th><th>Proyecto</th><th>m² material</th><th>Mano de obra</th><th></th>
+      </tr></thead><tbody>` +
+      disp.sort((a,b)=>b.folio-a.folio).map(c => {
+        const m2 = obraSuministroContratado(c);
+        const tipos = Object.keys(obraDetectarManoObra(c)).map(t => (OBRA_TIPOS.find(x=>x.key===t)||{label:t}).label);
+        return `<tr>
+          <td><strong>TEC-${String(c.folio).padStart(4,'0')}</strong></td>
+          <td>${c.cliente||'—'}</td>
+          <td>${c.proyecto||'—'}</td>
+          <td>${m2 ? m2.toLocaleString('es-MX') + ' m²' : '—'}</td>
+          <td>${tipos.length ? tipos.join(', ') : '<span style="color:#aaa">Sin instalación</span>'}</td>
+          <td><button class="btn btn-sm" style="background:#1A1A1A;color:#fff;border:none;font-weight:700;white-space:nowrap" onclick="obraActivar('${c.folio}')">+ Activar obra</button></td>
+        </tr>`;
+      }).join('') + `</tbody></table>`;
+  }
+}
 </script>
 
 <!-- ═══════════════════ MODAL TODOIST ═══════════════════ -->
