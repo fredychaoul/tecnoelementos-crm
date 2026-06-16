@@ -3306,7 +3306,7 @@ async function obraActivar(folio) {
     fechaActivacion: new Date().toISOString(),
     suministro: { contratado: Math.round(obraSuministroContratado(cot)*100)/100, suministrado: 0 },
     manoObra,
-    planoUrl: ''
+    volumen: { activo: false, unidadLabel: 'Nivel', unidades: [] }
   };
   await obraGuardar(lista, cot);
   mostrarToast('Obra activada — TEC-' + String(cot.folio).padStart(4,'0'), 'success');
@@ -3341,6 +3341,175 @@ async function obraSetAvance(folio, tipo, val) {
   cot.seguimiento.manoObra[tipo].avance_pct = Math.max(0, Math.min(100, parseFloat(val)||0));
   await obraGuardar(lista, cot);
   renderObra();
+}
+
+// ── Mapa de obra: subdivisión por niveles/departamentos (obras de volumen) ─
+const OBRA_UNIDAD_ESTADOS = ['pendiente', 'proceso', 'completo'];
+
+function obraVolumenDe(cot) {
+  // Compat: obras activadas antes de existir 'volumen'
+  if (!cot.seguimiento.volumen) cot.seguimiento.volumen = { activo:false, unidadLabel:'Nivel', unidades:[] };
+  return cot.seguimiento.volumen;
+}
+
+function obraEstadoUnidad(estado) {
+  if (estado === 'completo') return { txt:'Completo',   color:'#1E6B3C', bg:'#E3F4E9' };
+  if (estado === 'proceso')  return { txt:'En proceso', color:'#9A6B00', bg:'#FBF3DD' };
+  return { txt:'Pendiente', color:'#8B2020', bg:'#FBE3E3' };
+}
+
+async function obraVolumenActivar(folio) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  obraVolumenDe(cot).activo = true;
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
+async function obraVolumenSetLabel(folio, label) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  obraVolumenDe(cot).unidadLabel = (label || 'Nivel').trim() || 'Nivel';
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
+// Genera N unidades numeradas, continuando desde las existentes
+async function obraGenerarUnidades(folio) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  const vol = obraVolumenDe(cot);
+  const inp = document.getElementById('obra-gen-' + folio);
+  const n = Math.max(0, Math.min(500, parseInt(inp?.value) || 0));
+  if (n === 0) { mostrarToast('Indica cuántas unidades generar', 'info'); return; }
+  const base = vol.unidades.reduce((m,u) => Math.max(m, u.num || 0), 0);
+  for (let i = 1; i <= n; i++) {
+    const num = base + i;
+    vol.unidades.push({ id: 'u' + num + '-' + (base + i), num, nombre: vol.unidadLabel + ' ' + num, estado: 'pendiente' });
+  }
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
+async function obraAgregarUnidad(folio) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  const vol = obraVolumenDe(cot);
+  const num = vol.unidades.reduce((m,u) => Math.max(m, u.num || 0), 0) + 1;
+  vol.unidades.push({ id: 'u' + num + '-' + vol.unidades.length, num, nombre: vol.unidadLabel + ' ' + num, estado: 'pendiente' });
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
+// Clic en un chip: cicla pendiente -> proceso -> completo -> pendiente
+async function obraCiclarUnidad(folio, uid) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  const u = obraVolumenDe(cot).unidades.find(x => x.id === uid);
+  if (!u) return;
+  const i = OBRA_UNIDAD_ESTADOS.indexOf(u.estado);
+  u.estado = OBRA_UNIDAD_ESTADOS[(i + 1) % OBRA_UNIDAD_ESTADOS.length];
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
+async function obraRenombrarUnidad(folio, uid, nombre) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  const u = obraVolumenDe(cot).unidades.find(x => x.id === uid);
+  if (!u) return;
+  u.nombre = (nombre || '').trim() || u.nombre;
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
+async function obraEliminarUnidad(folio, uid) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  const vol = obraVolumenDe(cot);
+  vol.unidades = vol.unidades.filter(x => x.id !== uid);
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
+async function obraVolumenLimpiar(folio) {
+  if (!confirm('¿Borrar todas las unidades del mapa de obra?')) return;
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  const vol = obraVolumenDe(cot);
+  vol.unidades = [];
+  vol.activo = false;
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
+function obraMapaHTML(cot) {
+  const folio = cot.folio;
+  const vol = obraVolumenDe(cot);
+
+  if (!vol.activo) {
+    return `
+    <div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">
+      <button onclick="obraVolumenActivar('${folio}')" style="background:#F2F2F2;border:1px dashed #bbb;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:#555;cursor:pointer">🗺️ Es obra de volumen — dividir en niveles/departamentos</button>
+    </div>`;
+  }
+
+  const total = vol.unidades.length;
+  const comp  = vol.unidades.filter(u => u.estado === 'completo').length;
+  const proc  = vol.unidades.filter(u => u.estado === 'proceso').length;
+  const pend  = total - comp - proc;
+
+  const chips = vol.unidades.map(u => {
+    const e = obraEstadoUnidad(u.estado);
+    return `<span title="Clic para cambiar estado · ${e.txt}"
+      style="display:inline-flex;align-items:center;gap:6px;background:${e.bg};color:${e.color};border:1px solid ${e.color}33;border-radius:8px;padding:5px 8px 5px 10px;font-size:12px;font-weight:600;cursor:pointer;user-select:none"
+      onclick="obraCiclarUnidad('${folio}','${u.id}')">
+      <span style="width:8px;height:8px;border-radius:50%;background:${e.color};flex:none"></span>
+      <span ondblclick="event.stopPropagation();this.contentEditable=true;this.focus()"
+            onblur="this.contentEditable=false;obraRenombrarUnidad('${folio}','${u.id}',this.textContent)"
+            onclick="event.stopPropagation()" style="outline:none">${u.nombre}</span>
+      <span onclick="event.stopPropagation();obraEliminarUnidad('${folio}','${u.id}')" style="color:${e.color};opacity:.5;font-weight:700;margin-left:2px">×</span>
+    </span>`;
+  }).join('');
+
+  const unidadesHTML = total === 0
+    ? '<p style="font-size:12px;color:#aaa;margin:8px 0">Aún no hay unidades. Genera o agrega abajo.</p>'
+    : `<div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0">${chips}</div>`;
+
+  return `
+  <div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px">🗺️ Mapa de obra</span>
+      <span style="font-size:12px;color:#555">
+        <strong style="color:#1E6B3C">${comp}</strong> completos ·
+        <strong style="color:#9A6B00">${proc}</strong> en proceso ·
+        <strong style="color:#8B2020">${pend}</strong> pendientes
+        <span style="color:#aaa">(${total})</span>
+      </span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+      <label style="font-size:11px;color:#888">Dividir por:</label>
+      <select onchange="obraVolumenSetLabel('${folio}', this.value)" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+        <option value="Nivel"        ${vol.unidadLabel==='Nivel'?'selected':''}>Nivel</option>
+        <option value="Departamento" ${vol.unidadLabel==='Departamento'?'selected':''}>Departamento</option>
+        <option value="Zona"         ${vol.unidadLabel==='Zona'?'selected':''}>Zona</option>
+        <option value="Área"         ${vol.unidadLabel==='Área'?'selected':''}>Área</option>
+      </select>
+      <input type="number" id="obra-gen-${folio}" min="1" max="500" placeholder="N°" style="width:64px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+      <button onclick="obraGenerarUnidades('${folio}')" style="background:#1A1A1A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Generar</button>
+      <button onclick="obraAgregarUnidad('${folio}')" style="background:none;border:1px solid #ccc;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer">+ 1</button>
+      ${total>0?`<button onclick="obraVolumenLimpiar('${folio}')" style="background:none;border:none;color:#bbb;font-size:11px;cursor:pointer;margin-left:auto">borrar todo</button>`:''}
+    </div>
+    ${unidadesHTML}
+  </div>`;
 }
 
 // ── Render ──────────────────────────────────────────────────────────────
@@ -3399,6 +3568,7 @@ function obraCardHTML(cot) {
       <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Avance de mano de obra</div>
       ${manoHTML}
     </div>
+    ${obraMapaHTML(cot)}
   </div>`;
 }
 
