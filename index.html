@@ -3491,6 +3491,67 @@ async function obraVolumenLimpiar(folio) {
   renderObra();
 }
 
+// Captura rápida: interpreta descripciones tipo "20 niveles x 4 deptos", "deptos 101-120", "15 pisos"
+function obraParsearDescripcion(texto) {
+  const t = (texto||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const mLvl = t.match(/(\d+)\s*(niveles?|pisos?|plantas?)/);
+  const mDep = t.match(/(\d+)\s*(deptos?|departamentos?|unidades?|casas?|locales?|oficinas?)/);
+  const rango = t.match(/(\d+)\s*(?:-|a|al)\s*(\d+)/);
+
+  // Etiqueta por palabra clave presente (aunque no lleve número delante)
+  let label = 'Unidad';
+  if (/(niveles?|pisos?|plantas?)/.test(t)) label = 'Nivel';
+  if (/(deptos?|departamentos?)/.test(t))  label = 'Departamento';
+  else if (/casas?/.test(t))               label = 'Casa';
+  else if (/locales?/.test(t))             label = 'Local';
+  else if (/oficinas?/.test(t))            label = 'Oficina';
+  else if (/unidades?/.test(t))            label = 'Unidad';
+
+  const nombres = [];
+  if (mLvl && mDep) { // niveles × unidades por nivel -> numeración tipo 101,102,201...
+    const niveles = parseInt(mLvl[1]), porNivel = parseInt(mDep[1]);
+    if (niveles*porNivel <= 2000) {
+      for (let i=1;i<=niveles;i++) for (let j=1;j<=porNivel;j++)
+        nombres.push(label==='Departamento' ? String(i*100+j) : 'N'+i+'-'+j);
+      return { nombres, label: label==='Nivel' ? 'Departamento' : label };
+    }
+  }
+  if (rango) {
+    const a=parseInt(rango[1]), b=parseInt(rango[2]);
+    if (b>=a && b-a < 2000) { for(let i=a;i<=b;i++) nombres.push(label+' '+i); return { nombres, label }; }
+  }
+  if (mLvl) { const n=parseInt(mLvl[1]); for(let i=1;i<=n;i++) nombres.push('Nivel '+i); return { nombres, label:'Nivel' }; }
+  if (mDep) { const n=parseInt(mDep[1]); for(let i=1;i<=n;i++) nombres.push(label+' '+i); return { nombres, label }; }
+  return { nombres: [], label };
+}
+
+async function obraCrearUnidadesDesde(folio, nombres, label) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  const vol = obraVolumenDe(cot);
+  if (label) vol.unidadLabel = label;
+  let base = vol.unidades.reduce((m,u)=>Math.max(m,u.num||0),0);
+  nombres.forEach(nombre => { base++; vol.unidades.push({ id:'u'+base+'-'+vol.unidades.length, num:base, nombre, estado:'pendiente' }); });
+  await obraGuardar(lista, cot);
+  mostrarToast(nombres.length + ' unidades creadas', 'success');
+  renderObra();
+}
+
+async function obraCapturaTexto(folio) {
+  const inp = document.getElementById('obra-desc-' + folio);
+  const r = obraParsearDescripcion(inp?.value || '');
+  if (!r.nombres.length) { mostrarToast('No entendí. Ej: "20 niveles x 4 deptos", "deptos 101-120" — o pega una lista', 'info'); return; }
+  await obraCrearUnidadesDesde(folio, r.nombres, r.label);
+}
+
+async function obraImportarLista(folio) {
+  const ta = document.getElementById('obra-lista-' + folio);
+  const nombres = (ta?.value || '').split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
+  if (!nombres.length) { mostrarToast('Pega una lista (uno por línea o separados por coma)', 'info'); return; }
+  await obraCrearUnidadesDesde(folio, nombres);
+}
+
 function obraMapaHTML(cot) {
   const folio = cot.folio;
   const vol = obraVolumenDe(cot);
@@ -3548,6 +3609,17 @@ function obraMapaHTML(cot) {
       <button class="obra-btn" onclick="obraAgregarUnidad('${folio}')" style="background:none;border:1px solid #ccc;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer">+ 1</button>
       ${total>0?`<button onclick="obraVolumenLimpiar('${folio}')" style="background:none;border:none;color:#bbb;font-size:11px;cursor:pointer;margin-left:auto">borrar todo</button>`:''}
     </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+      <input id="obra-desc-${folio}" placeholder='Captura rápida: ej. "20 niveles x 4 deptos" o "deptos 101-120"' class="obra-input" style="flex:1;min-width:200px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+      <button class="obra-btn" onclick="obraCapturaTexto('${folio}')" style="background:#1A1A1A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">✨ Desde texto</button>
+    </div>
+    <details style="margin-bottom:8px">
+      <summary style="font-size:11px;color:#888;cursor:pointer">o pegar una lista (uno por línea o separados por coma)</summary>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <textarea id="obra-lista-${folio}" rows="3" placeholder="Depto 101, Depto 102, PH..." class="obra-input" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;resize:vertical"></textarea>
+        <button class="obra-btn" onclick="obraImportarLista('${folio}')" style="background:#1A1A1A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;align-self:flex-start">Importar</button>
+      </div>
+    </details>
     ${unidadesHTML}
   </div>`;
 }
