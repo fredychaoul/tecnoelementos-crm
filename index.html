@@ -597,6 +597,10 @@
     #obra-disponibles-container tbody tr:hover { background:#FAFAFA; }
     #page-obra .stat { transition: transform .2s ease, box-shadow .2s ease; }
     #page-obra .stat:hover { transform: translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,.08); }
+    .obra-fila { display:flex; align-items:center; gap:12px; padding:11px 14px; border:1px solid #EEE; border-radius:10px; margin-bottom:8px; cursor:pointer; background:#fff; transition: box-shadow .18s ease, border-color .18s ease, transform .12s ease; }
+    .obra-fila:hover { box-shadow:0 4px 14px rgba(0,0,0,.07); border-color:#ddd; transform:translateY(-1px); }
+    .obra-detalle { margin:-2px 0 14px; animation: obraIn .3s ease both; }
+    .obra-detalle > .obra-card { margin-bottom:0; }
   </style>
   <div class="stats" style="grid-template-columns:repeat(4,1fr)">
     <div class="stat"><div class="label">Obras Activas</div><div class="value" id="obra-stat-activas">0</div></div>
@@ -611,6 +615,14 @@
       <input type="text" id="obra-search" placeholder="🔍  Buscar por cliente, folio, proyecto..." oninput="renderObra()">
     </div>
     <div id="obra-activas-container"></div>
+  </div>
+
+  <div class="card" id="obra-terminadas-card" style="display:none">
+    <h2 style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:none;margin-bottom:0;padding-bottom:0" onclick="obraToggleTerminadas()">
+      <span>✅ Terminadas <span id="obra-term-count" style="font-size:12px;color:#888;font-weight:400"></span></span>
+      <span id="obra-term-chevron" style="font-size:13px;color:#aaa">▸</span>
+    </h2>
+    <div id="obra-terminadas-container" style="display:none;margin-top:18px"></div>
   </div>
 
   <div class="card">
@@ -3539,6 +3551,62 @@ function obraMapaHTML(cot) {
   </div>`;
 }
 
+// ── Tablero compacto + archivado ──────────────────────────────────────────
+let obraExpandidas = new Set();
+
+function obraToggleExpandir(folio) {
+  const k = String(folio);
+  if (obraExpandidas.has(k)) obraExpandidas.delete(k); else obraExpandidas.add(k);
+  renderObra();
+}
+
+function obraToggleTerminadas() {
+  const c  = document.getElementById('obra-terminadas-container');
+  const ch = document.getElementById('obra-term-chevron');
+  const show = c.style.display === 'none';
+  c.style.display = show ? 'block' : 'none';
+  ch.textContent = show ? '▾' : '▸';
+}
+
+// Una obra está terminada cuando suministro + mano de obra están al 100%
+// y, si es de volumen, todas sus unidades están completas.
+function obraEstaTerminada(cot) {
+  if (!cot.seguimiento) return false;
+  if (obraResumen(cot).estadoGlobal !== 'completo') return false;
+  const vol = cot.seguimiento.volumen;
+  if (vol && vol.activo && vol.unidades.length) return vol.unidades.every(u => u.estado === 'completo');
+  return true;
+}
+
+function obraDotHTML(label, pct) {
+  const e = obraEstado(pct);
+  return `<span title="${label}: ${pct}%" style="width:10px;height:10px;border-radius:50%;background:${e.color};display:inline-block;flex:none"></span>`;
+}
+
+// Fila compacta del tablero (clic para expandir el detalle)
+function obraFilaCompactaHTML(cot) {
+  const folio = cot.folio;
+  const s = cot.seguimiento;
+  const res = obraResumen(cot);
+  const open = obraExpandidas.has(String(folio));
+  const gColor = res.estadoGlobal==='completo' ? '#1E6B3C' : res.estadoGlobal==='pendiente' ? '#8B2020' : '#9A6B00';
+  const dots = [obraDotHTML('Suministro', obraPct(s.suministro.suministrado, s.suministro.contratado))];
+  Object.keys(s.manoObra||{}).forEach(t => {
+    const tipo = OBRA_TIPOS.find(x=>x.key===t) || { label:t };
+    dots.push(obraDotHTML(tipo.label, s.manoObra[t].avance_pct||0));
+  });
+  return `
+  <div class="obra-fila" onclick="obraToggleExpandir('${folio}')">
+    <span style="color:#bbb;font-size:13px;width:14px;flex:none">${open?'▾':'▸'}</span>
+    <span style="font-weight:700;font-size:13px;white-space:nowrap;flex:none">TEC-${String(folio).padStart(4,'0')}</span>
+    <span style="font-size:13px;flex:none;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cot.cliente||'—'}</span>
+    <span style="font-size:11px;color:#aaa;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cot.proyecto||cot.ciudad||''}</span>
+    <span style="display:flex;gap:4px;align-items:center;flex:none">${dots.join('')}</span>
+    <span style="width:90px;flex:none"><span class="obra-bar-track" style="height:7px;display:block"><span class="obra-bar-fill" style="background:${gColor};width:${res.avgPct}%;display:block"></span></span></span>
+    <span class="obra-pill" style="background:${gColor};color:#fff;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap;flex:none">${res.avgPct}%</span>
+  </div>`;
+}
+
 // ── Render ──────────────────────────────────────────────────────────────
 function obraBarraHTML(label, pct, est, rightHTML) {
   return `
@@ -3599,27 +3667,39 @@ function obraCardHTML(cot) {
   </div>`;
 }
 
+function obraTableroHTML(cot) {
+  return obraFilaCompactaHTML(cot) +
+    (obraExpandidas.has(String(cot.folio)) ? `<div class="obra-detalle">${obraCardHTML(cot)}</div>` : '');
+}
+
 async function renderObra() {
   const lista = await getCotizaciones();
-  const activas = lista.filter(c => c.seguimiento && c.seguimiento.activa);
   const q = (document.getElementById('obra-search')?.value || '').toLowerCase();
+  const matchQ = c => !q || (c.cliente||'').toLowerCase().includes(q) ||
+    String(c.folio).includes(q) || (c.proyecto||'').toLowerCase().includes(q);
 
-  let completas=0, proceso=0, pend=0;
-  activas.forEach(c => {
-    const e = obraResumen(c).estadoGlobal;
-    if (e === 'completo') completas++; else if (e === 'pendiente') pend++; else proceso++;
-  });
-  document.getElementById('obra-stat-activas').textContent    = activas.length;
-  document.getElementById('obra-stat-completas').textContent  = completas;
+  const todas      = lista.filter(c => c.seguimiento && c.seguimiento.activa);
+  const terminadas = todas.filter(obraEstaTerminada);
+  const enCurso    = todas.filter(c => !obraEstaTerminada(c));
+
+  let proceso=0, pend=0;
+  enCurso.forEach(c => { obraResumen(c).estadoGlobal === 'pendiente' ? pend++ : proceso++; });
+  document.getElementById('obra-stat-activas').textContent    = todas.length;
+  document.getElementById('obra-stat-completas').textContent  = terminadas.length;
   document.getElementById('obra-stat-proceso').textContent    = proceso;
   document.getElementById('obra-stat-pendientes').textContent = pend;
 
-  const filtradas = activas.filter(c => !q || (c.cliente||'').toLowerCase().includes(q) ||
-    String(c.folio).includes(q) || (c.proyecto||'').toLowerCase().includes(q));
-  const cont = document.getElementById('obra-activas-container');
-  cont.innerHTML = filtradas.length === 0
-    ? `<div class="empty-state"><div class="icon">🏗️</div><p>No hay obras en seguimiento.<br>Activa una desde la lista de abajo.</p></div>`
-    : filtradas.sort((a,b)=>b.folio-a.folio).map(obraCardHTML).join('');
+  // Obras en curso — tablero compacto con detalle expandible
+  const act = enCurso.filter(matchQ).sort((a,b)=>b.folio-a.folio);
+  document.getElementById('obra-activas-container').innerHTML = act.length === 0
+    ? `<div class="empty-state"><div class="icon">🏗️</div><p>No hay obras en curso.<br>Activa una desde la lista de abajo.</p></div>`
+    : act.map(obraTableroHTML).join('');
+
+  // Terminadas — sección colapsable
+  const term = terminadas.filter(matchQ).sort((a,b)=>b.folio-a.folio);
+  document.getElementById('obra-terminadas-card').style.display = terminadas.length ? 'block' : 'none';
+  document.getElementById('obra-term-count').textContent = '(' + terminadas.length + ')';
+  document.getElementById('obra-terminadas-container').innerHTML = term.map(obraTableroHTML).join('');
 
   const disp = lista.filter(c => !c.esBorrador && !(c.seguimiento && c.seguimiento.activa) &&
     (obraSuministroContratado(c) > 0 || obraLlevaManoObra(c)));
