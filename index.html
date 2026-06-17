@@ -3307,15 +3307,29 @@ function obraEstado(pct) {
 }
 
 // Resumen global de una obra (para el semáforo y los stats)
+// % de avance del mapa (promedio del estado de las unidades). null si no aplica.
+function obraMapaPct(cot) {
+  const vol = cot.seguimiento && cot.seguimiento.volumen;
+  if (!vol || !vol.activo || !vol.unidades.length) return null;
+  const max = OBRA_UNIDAD_ESTADOS.length - 1;
+  const suma = vol.unidades.reduce((a,u) => a + OBRA_UNIDAD_ESTADOS.indexOf(obraNormalizarEstadoUnidad(u.estado)), 0);
+  return Math.round((suma / (vol.unidades.length * max)) * 100);
+}
+
 function obraResumen(cot) {
   const s = cot.seguimiento;
-  const partidas = [{ pct: obraPct(s.suministro.suministrado, s.suministro.contratado), contratado: s.suministro.contratado }];
-  Object.keys(s.manoObra || {}).forEach(t => partidas.push({ pct: s.manoObra[t].avance_pct||0, contratado: s.manoObra[t].contratado }));
-  const conMeta = partidas.filter(p => p.contratado > 0);
-  const todas100 = conMeta.length > 0 && conMeta.every(p => p.pct >= 100);
-  const todas0   = conMeta.length > 0 && conMeta.every(p => p.pct <= 0);
+  const mapaPct = obraMapaPct(cot); // null si no es obra de volumen con unidades
+  const partidas = [];
+  if (s.suministro.contratado > 0) partidas.push(obraPct(s.suministro.suministrado, s.suministro.contratado));
+  if (mapaPct !== null) {
+    partidas.push(mapaPct); // en volumen, el mapa ES el avance de mano de obra
+  } else {
+    Object.keys(s.manoObra || {}).forEach(t => { if (s.manoObra[t].contratado > 0) partidas.push(s.manoObra[t].avance_pct||0); });
+  }
+  const todas100 = partidas.length > 0 && partidas.every(p => p >= 100);
+  const todas0   = partidas.length > 0 && partidas.every(p => p <= 0);
   const estadoGlobal = todas100 ? 'completo' : (todas0 ? 'pendiente' : 'proceso');
-  const avgPct = conMeta.length ? Math.round(conMeta.reduce((a,p)=>a+p.pct,0)/conMeta.length) : 0;
+  const avgPct = partidas.length ? Math.round(partidas.reduce((a,p)=>a+p,0)/partidas.length) : 0;
   return { estadoGlobal, avgPct };
 }
 
@@ -3926,9 +3940,10 @@ function obraConceptos(cot) {
   const supPct = obraPct(s.suministro.suministrado, s.suministro.contratado);
   out.push({ concepto:'Suministro de material', contratado:impSum, avancePct:supPct, ejecutado: Math.round(impSum*supPct)/100 });
   const impMO = obraImporteManoObraPorTipo(cot);
+  const mapaPct = obraMapaPct(cot); // en volumen, la mano de obra avanza según el mapa
   Object.keys(s.manoObra || {}).forEach(t => {
     const imp = impMO[t] || 0;
-    const pct = s.manoObra[t].avance_pct || 0;
+    const pct = mapaPct !== null ? mapaPct : (s.manoObra[t].avance_pct || 0);
     const tipo = OBRA_TIPOS.find(x => x.key === t) || { label:t };
     out.push({ concepto: tipo.label, contratado: imp, avancePct: pct, ejecutado: Math.round(imp*pct)/100 });
   });
@@ -4072,9 +4087,14 @@ function obraFilaCompactaHTML(cot) {
   // "qué falta" — partidas con avance < 100
   const faltan = [];
   if (s.suministro.contratado > 0 && obraPct(s.suministro.suministrado, s.suministro.contratado) < 100) faltan.push('suministro');
-  Object.keys(s.manoObra || {}).forEach(t => {
-    if ((s.manoObra[t].avance_pct || 0) < 100) { const tp = OBRA_TIPOS.find(x=>x.key===t) || { label:t }; faltan.push(tp.label.toLowerCase()); }
-  });
+  const mapaPct = obraMapaPct(cot);
+  if (mapaPct !== null) {
+    if (mapaPct < 100) faltan.push('ejecución de unidades');   // volumen: lo mide el mapa
+  } else {
+    Object.keys(s.manoObra || {}).forEach(t => {
+      if ((s.manoObra[t].avance_pct || 0) < 100) { const tp = OBRA_TIPOS.find(x=>x.key===t) || { label:t }; faltan.push(tp.label.toLowerCase()); }
+    });
+  }
   const faltaTxt = faltan.length ? ('Falta: ' + faltan.slice(0,3).join(', ') + (faltan.length>3?'…':'')) : 'Lista para entregar';
   const faltaColor = faltan.length ? '#888' : '#1E6B3C';
   const atraso = obraAtrasoBadge((s.fechas||{}).finProg, (s.fechas||{}).finReal);
@@ -4146,20 +4166,39 @@ function obraAvanceHTML(cot) {
     ${obraQuickSuministro(folio, s)}
   </div>`;
   const manoKeys = Object.keys(s.manoObra || {});
+  const mapaPct = obraMapaPct(cot);
   if (manoKeys.length) {
-    html += manoKeys.map(t => {
-      const mo = s.manoObra[t], pct = mo.avance_pct || 0, est = obraEstado(pct);
-      const tipo = OBRA_TIPOS.find(x => x.key === t) || { label:t, icon:'🔧' };
-      return `
+    if (mapaPct !== null) {
+      // Obra de volumen: la mano de obra avanza según el mapa (solo lectura aquí)
+      const est = obraEstado(mapaPct);
+      const labels = manoKeys.map(t => (OBRA_TIPOS.find(x=>x.key===t)||{label:t}).label).join(', ');
+      html += `
       <div class="obra-av-row">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:14px;font-weight:600">${tipo.icon} ${tipo.label}</span>
-          <span style="font-size:13px;color:${est.color};font-weight:700">${pct}%</span>
+          <span style="font-size:14px;font-weight:600">🔧 Mano de obra <span style="font-size:11px;color:#aaa;font-weight:400">(${labels})</span></span>
+          <span style="font-size:13px;color:${est.color};font-weight:700">${mapaPct}%</span>
         </div>
-        <div class="obra-bar-track" style="margin-top:8px"><div class="obra-bar-fill" style="background:${est.color};width:${pct}%"></div></div>
-        ${obraQuickPct(folio, t, pct)}
+        <div class="obra-bar-track" style="margin-top:8px"><div class="obra-bar-fill" style="background:${est.color};width:${mapaPct}%"></div></div>
+        <div style="margin-top:8px;font-size:11px;color:#888;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          Se calcula del avance de las unidades.
+          <button onclick="obraSetTab('${folio}','mapa')" style="background:none;border:1px solid #ddd;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;color:#555;cursor:pointer">Ir al Mapa →</button>
+        </div>
       </div>`;
-    }).join('');
+    } else {
+      html += manoKeys.map(t => {
+        const mo = s.manoObra[t], pct = mo.avance_pct || 0, est = obraEstado(pct);
+        const tipo = OBRA_TIPOS.find(x => x.key === t) || { label:t, icon:'🔧' };
+        return `
+        <div class="obra-av-row">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:14px;font-weight:600">${tipo.icon} ${tipo.label}</span>
+            <span style="font-size:13px;color:${est.color};font-weight:700">${pct}%</span>
+          </div>
+          <div class="obra-bar-track" style="margin-top:8px"><div class="obra-bar-fill" style="background:${est.color};width:${pct}%"></div></div>
+          ${obraQuickPct(folio, t, pct)}
+        </div>`;
+      }).join('');
+    }
   }
   return html;
 }
