@@ -3387,13 +3387,14 @@ async function obraSetAvance(folio, tipo, val) {
 }
 
 // ── Mapa de obra: subdivisión por niveles/departamentos (obras de volumen) ─
-const OBRA_UNIDAD_ESTADOS = ['sin_iniciar', 'en_proceso', 'concluido', 'firmado', 'entregado'];
+const OBRA_UNIDAD_ESTADOS = ['sin_iniciar', 'en_proceso', 'concluido', 'entregado'];
 
-// Compat con el modelo viejo de 3 estados
+// Compat con modelos previos (3 estados, y 'firmado' fusionado en 'entregado')
 function obraNormalizarEstadoUnidad(e) {
   if (e === 'pendiente') return 'sin_iniciar';
   if (e === 'proceso')   return 'en_proceso';
   if (e === 'completo')  return 'concluido';
+  if (e === 'firmado')   return 'entregado'; // firmado = entregado (firmó de conformidad)
   return OBRA_UNIDAD_ESTADOS.includes(e) ? e : 'sin_iniciar';
 }
 
@@ -3405,9 +3406,8 @@ function obraVolumenDe(cot) {
 
 function obraEstadoUnidad(estado) {
   switch (obraNormalizarEstadoUnidad(estado)) {
-    case 'entregado': return { txt:'Entregado',  color:'#1E6B3C', bg:'#E3F4E9' }; // verde
-    case 'firmado':   return { txt:'Firmado',    color:'#1A7F8E', bg:'#E0F3F5' }; // teal
-    case 'concluido': return { txt:'Concluido',  color:'#2E6BB8', bg:'#E4EEF9' }; // azul
+    case 'entregado': return { txt:'Entregado',  color:'#1E6B3C', bg:'#E3F4E9' }; // verde (firmado de conformidad)
+    case 'concluido': return { txt:'Concluido',  color:'#2E6BB8', bg:'#E4EEF9' }; // azul (terminado, sin firma)
     case 'en_proceso':return { txt:'En proceso', color:'#9A6B00', bg:'#FBF3DD' }; // amarillo
     default:          return { txt:'Sin iniciar',color:'#8B2020', bg:'#FBE3E3' }; // rojo
   }
@@ -3642,9 +3642,9 @@ function obraMapaHTML(cot) {
   }
 
   const total = vol.unidades.length;
-  const tally = { sin_iniciar:0, en_proceso:0, concluido:0, firmado:0, entregado:0 };
+  const tally = { sin_iniciar:0, en_proceso:0, concluido:0, entregado:0 };
   vol.unidades.forEach(u => { tally[obraNormalizarEstadoUnidad(u.estado)]++; });
-  const ORDEN = [['entregado','entregados'],['firmado','firmados'],['concluido','concluidos'],['en_proceso','en proceso'],['sin_iniciar','sin iniciar']];
+  const ORDEN = [['entregado','entregados'],['concluido','concluidos'],['en_proceso','en proceso'],['sin_iniciar','sin iniciar']];
   const resumen = ORDEN.filter(([k]) => tally[k] > 0)
     .map(([k,lbl]) => `<strong style="color:${obraEstadoUnidad(k).color}">${tally[k]}</strong> ${lbl}`).join(' · ');
 
@@ -3671,7 +3671,7 @@ function obraMapaHTML(cot) {
       <span style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px">🗺️ Mapa de obra</span>
       <span style="font-size:12px;color:#555">${resumen || 'sin unidades'} <span style="color:#aaa">(${total})</span></span>
     </div>
-    <div style="font-size:10.5px;color:#aaa;margin:-2px 0 8px">Clic en una unidad para avanzar su estado: Sin iniciar → En proceso → Concluido → Firmado → Entregado</div>
+    <div style="font-size:10.5px;color:#aaa;margin:-2px 0 8px">Clic en una unidad para avanzar su estado: Sin iniciar → En proceso → Concluido (sin firma) → Entregado (firmado)</div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
       <label style="font-size:11px;color:#888">Dividir por:</label>
       <select onchange="obraVolumenSetLabel('${folio}', this.value)" class="obra-input" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
