@@ -3641,6 +3641,74 @@ async function obraIAConfirmar(folio) {
   delete obraIAResultado[folio];
 }
 
+// Infiere el nivel a partir del nombre de la unidad (101 -> Nivel 1, etc.)
+function obraNivelDeNombre(nombre) {
+  const s = String(nombre || '').trim();
+  const m = s.match(/(\d{3,})\s*$/);            // número tipo 101, 1203 al final
+  if (m) return 'Nivel ' + Math.floor(parseInt(m[1]) / 100);
+  const n = s.match(/^N(\d+)[-_\s]/i);          // N1-2, N3_4
+  if (n) return 'Nivel ' + parseInt(n[1]);
+  return '';
+}
+function obraNivelDe(u) { return u.nivel || obraNivelDeNombre(u.nombre); }
+
+const obraNivelOpen = new Set();
+function obraToggleNivel(folio, nivelEnc) {
+  const k = String(folio) + '|' + decodeURIComponent(nivelEnc);
+  if (obraNivelOpen.has(k)) obraNivelOpen.delete(k); else obraNivelOpen.add(k);
+  renderObra();
+}
+async function obraSetNivelEstado(folio, nivelEnc, estado) {
+  const nivel = decodeURIComponent(nivelEnc);
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  obraVolumenDe(cot).unidades.forEach(u => { if (obraNivelDe(u) === nivel) u.estado = estado; });
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
+// Sección colapsable de un nivel con sus departamentos en lista
+function obraNivelHTML(folio, nivel, unidades) {
+  const tally = { sin_iniciar:0, en_proceso:0, concluido:0, entregado:0 };
+  unidades.forEach(u => tally[obraNormalizarEstadoUnidad(u.estado)]++);
+  let peor = OBRA_UNIDAD_ESTADOS.length - 1;
+  unidades.forEach(u => { peor = Math.min(peor, OBRA_UNIDAD_ESTADOS.indexOf(obraNormalizarEstadoUnidad(u.estado))); });
+  const colNivel = obraEstadoUnidad(OBRA_UNIDAD_ESTADOS[peor]).color;
+  const open = obraNivelOpen.has(String(folio) + '|' + nivel);
+  const enc = encodeURIComponent(nivel);
+
+  const marcar = OBRA_UNIDAD_ESTADOS.map(st => {
+    const e = obraEstadoUnidad(st);
+    return `<button title="Marcar todo el nivel: ${e.txt}" aria-label="Marcar ${e.txt}" onclick="event.stopPropagation();obraSetNivelEstado('${folio}','${enc}','${st}')" style="width:18px;height:18px;border-radius:50%;border:1.5px solid ${e.color};background:${e.bg};cursor:pointer;padding:0;flex:none"></button>`;
+  }).join('');
+
+  const filas = unidades.map(u => {
+    const e = obraEstadoUnidad(u.estado);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-top:1px solid #F2F2F2">
+      <span ondblclick="this.contentEditable=true;this.focus()" onblur="this.contentEditable=false;obraRenombrarUnidad('${folio}','${u.id}',this.textContent)" style="font-size:13px;outline:none">${u.nombre}</span>
+      <span style="display:flex;align-items:center;gap:10px">
+        <button onclick="obraCiclarUnidad('${folio}','${u.id}')" style="background:${e.bg};color:${e.color};border:1px solid ${e.color}33;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;min-width:100px">${e.txt}</button>
+        <span class="obra-chip-x" onclick="obraEliminarUnidad('${folio}','${u.id}')" style="color:#bbb;font-weight:700;cursor:pointer" title="Quitar">×</span>
+      </span>
+    </div>`;
+  }).join('');
+
+  return `
+  <div style="border:1px solid #ECECEC;border-radius:10px;margin-bottom:8px;overflow:hidden">
+    <div onclick="obraToggleNivel('${folio}','${enc}')" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;cursor:pointer;background:#FAFAFA">
+      <span style="display:flex;align-items:center;gap:8px;min-width:0">
+        <span style="color:#bbb;font-size:13px">${open?'▾':'▸'}</span>
+        <span style="width:9px;height:9px;border-radius:50%;background:${colNivel};flex:none"></span>
+        <span style="font-weight:700;font-size:13px">${nivel || 'Unidades'}</span>
+        <span style="font-size:11px;color:#888;white-space:nowrap">${tally.entregado}/${unidades.length} entregados</span>
+      </span>
+      <span style="display:flex;align-items:center;gap:5px;flex:none">${marcar}</span>
+    </div>
+    ${open ? filas : ''}
+  </div>`;
+}
+
 function obraMapaHTML(cot) {
   const folio = cot.folio;
   const vol = obraVolumenDe(cot);
@@ -3659,22 +3727,17 @@ function obraMapaHTML(cot) {
   const resumen = ORDEN.filter(([k]) => tally[k] > 0)
     .map(([k,lbl]) => `<strong style="color:${obraEstadoUnidad(k).color}">${tally[k]}</strong> ${lbl}`).join(' · ');
 
-  const chips = vol.unidades.map(u => {
-    const e = obraEstadoUnidad(u.estado);
-    return `<span class="obra-chip" title="Clic: cambiar estado · doble clic en el nombre para renombrar · × para quitar"
-      style="display:inline-flex;align-items:center;gap:6px;background:${e.bg};color:${e.color};border:1px solid ${e.color}33;border-radius:8px;padding:5px 8px 5px 10px;font-size:12px;font-weight:600;cursor:pointer;user-select:none"
-      onclick="obraCiclarUnidad('${folio}','${u.id}')">
-      <span style="width:8px;height:8px;border-radius:50%;background:${e.color};flex:none"></span>
-      <span ondblclick="event.stopPropagation();this.contentEditable=true;this.focus()"
-            onblur="this.contentEditable=false;obraRenombrarUnidad('${folio}','${u.id}',this.textContent)"
-            onclick="event.stopPropagation()" style="outline:none">${u.nombre}</span>
-      <span class="obra-chip-x" onclick="event.stopPropagation();obraEliminarUnidad('${folio}','${u.id}')" style="color:${e.color};opacity:.5;font-weight:700;margin-left:2px">×</span>
-    </span>`;
-  }).join('');
+  // Agrupar unidades por nivel
+  const grupos = {};
+  vol.unidades.forEach(u => { const nv = obraNivelDe(u); (grupos[nv] = grupos[nv] || []).push(u); });
+  const claves = Object.keys(grupos).sort((a,b) => {
+    if (a === '') return 1; if (b === '') return -1;
+    return (parseInt((a.match(/\d+/)||[0])[0]) || 0) - (parseInt((b.match(/\d+/)||[0])[0]) || 0);
+  });
 
   const unidadesHTML = total === 0
     ? '<p style="font-size:12px;color:#aaa;margin:8px 0">Aún no hay unidades. Genera o agrega abajo.</p>'
-    : `<div style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0">${chips}</div>`;
+    : '<div style="margin:10px 0">' + claves.map(nv => obraNivelHTML(folio, nv, grupos[nv])).join('') + '</div>';
 
   return `
   <div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">
@@ -3682,7 +3745,7 @@ function obraMapaHTML(cot) {
       <span style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px">🗺️ Mapa de obra</span>
       <span style="font-size:12px;color:#555">${resumen || 'sin unidades'} <span style="color:#aaa">(${total})</span></span>
     </div>
-    <div style="font-size:10.5px;color:#aaa;margin:-2px 0 8px">Clic en una unidad para avanzar su estado: Sin iniciar → En proceso → Concluido (sin firma) → Entregado (firmado)</div>
+    <div style="font-size:10.5px;color:#aaa;margin:-2px 0 8px">Toca un nivel para abrirlo. En cada depto, toca su estado para avanzarlo (Sin iniciar→En proceso→Concluido→Entregado). Los círculos del nivel marcan TODO el nivel de un toque.</div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
       <label style="font-size:11px;color:#888">Dividir por:</label>
       <select onchange="obraVolumenSetLabel('${folio}', this.value)" class="obra-input" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
