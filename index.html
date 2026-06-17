@@ -3668,8 +3668,32 @@ async function obraSetNivelEstado(folio, nivelEnc, estado) {
   renderObra();
 }
 
+// ¿La obra lleva nivelación contratada? (paso adicional por unidad)
+function obraLlevaNivelacion(cot) {
+  return !!(cot.seguimiento && cot.seguimiento.manoObra && cot.seguimiento.manoObra.nivelacion);
+}
+async function obraToggleNivelacion(folio, uid) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  const u = obraVolumenDe(cot).unidades.find(x => x.id === uid);
+  if (!u) return;
+  u.nivelacion = !u.nivelacion;
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+async function obraSetNivelacionNivel(folio, nivelEnc, val) {
+  const nivel = decodeURIComponent(nivelEnc);
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  obraVolumenDe(cot).unidades.forEach(u => { if (obraNivelDe(u) === nivel) u.nivelacion = val; });
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
 // Sección colapsable de un nivel con sus departamentos en lista
-function obraNivelHTML(folio, nivel, unidades) {
+function obraNivelHTML(folio, nivel, unidades, tieneNiv) {
   const tally = { sin_iniciar:0, en_proceso:0, concluido:0, entregado:0 };
   unidades.forEach(u => tally[obraNormalizarEstadoUnidad(u.estado)]++);
   let peor = OBRA_UNIDAD_ESTADOS.length - 1;
@@ -3683,27 +3707,40 @@ function obraNivelHTML(folio, nivel, unidades) {
     return `<button title="Marcar todo el nivel: ${e.txt}" aria-label="Marcar ${e.txt}" onclick="event.stopPropagation();obraSetNivelEstado('${folio}','${enc}','${st}')" style="width:18px;height:18px;border-radius:50%;border:1.5px solid ${e.color};background:${e.bg};cursor:pointer;padding:0;flex:none"></button>`;
   }).join('');
 
+  const nivHechos = unidades.filter(u => u.nivelacion).length;
+  const todasNiv = nivHechos === unidades.length;
+
   const filas = unidades.map(u => {
     const e = obraEstadoUnidad(u.estado);
-    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-top:1px solid #F2F2F2">
+    const nivPill = tieneNiv
+      ? `<button onclick="event.stopPropagation();obraToggleNivelacion('${folio}','${u.id}')" title="Nivelación ${u.nivelacion?'hecha':'pendiente'}" style="background:${u.nivelacion?'#E3F4E9':'#F4F4F4'};color:${u.nivelacion?'#1E6B3C':'#999'};border:1px solid ${u.nivelacion?'#1E6B3C33':'#ddd'};border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${u.nivelacion?'✓':'○'} Nivelación</button>`
+      : '';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-top:1px solid #F2F2F2;flex-wrap:wrap">
       <span ondblclick="this.contentEditable=true;this.focus()" onblur="this.contentEditable=false;obraRenombrarUnidad('${folio}','${u.id}',this.textContent)" style="font-size:13px;outline:none">${u.nombre}</span>
-      <span style="display:flex;align-items:center;gap:10px">
+      <span style="display:flex;align-items:center;gap:8px">
+        ${nivPill}
         <button onclick="obraCiclarUnidad('${folio}','${u.id}')" style="background:${e.bg};color:${e.color};border:1px solid ${e.color}33;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;min-width:100px">${e.txt}</button>
         <span class="obra-chip-x" onclick="obraEliminarUnidad('${folio}','${u.id}')" style="color:#bbb;font-weight:700;cursor:pointer" title="Quitar">×</span>
       </span>
     </div>`;
   }).join('');
 
+  const nivResumen = tieneNiv ? `<span style="font-size:11px;color:#888;white-space:nowrap">· Niv ${nivHechos}/${unidades.length}</span>` : '';
+  const nivBulk = tieneNiv
+    ? `<button onclick="event.stopPropagation();obraSetNivelacionNivel('${folio}','${enc}',${!todasNiv})" title="Marcar nivelación de todo el nivel" style="background:${todasNiv?'#E3F4E9':'#fff'};color:${todasNiv?'#1E6B3C':'#888'};border:1px solid ${todasNiv?'#1E6B3C':'#ddd'};border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex:none">${todasNiv?'✓':'○'} Niv</button>`
+    : '';
+
   return `
   <div style="border:1px solid #ECECEC;border-radius:10px;margin-bottom:8px;overflow:hidden">
-    <div onclick="obraToggleNivel('${folio}','${enc}')" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;cursor:pointer;background:#FAFAFA">
+    <div onclick="obraToggleNivel('${folio}','${enc}')" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;cursor:pointer;background:#FAFAFA;flex-wrap:wrap">
       <span style="display:flex;align-items:center;gap:8px;min-width:0">
         <span style="color:#bbb;font-size:13px">${open?'▾':'▸'}</span>
         <span style="width:9px;height:9px;border-radius:50%;background:${colNivel};flex:none"></span>
         <span style="font-weight:700;font-size:13px">${nivel || 'Unidades'}</span>
         <span style="font-size:11px;color:#888;white-space:nowrap">${tally.entregado}/${unidades.length} entregados</span>
+        ${nivResumen}
       </span>
-      <span style="display:flex;align-items:center;gap:5px;flex:none">${marcar}</span>
+      <span style="display:flex;align-items:center;gap:6px;flex:none">${nivBulk}${marcar}</span>
     </div>
     ${open ? filas : ''}
   </div>`;
@@ -3735,9 +3772,10 @@ function obraMapaHTML(cot) {
     return (parseInt((a.match(/\d+/)||[0])[0]) || 0) - (parseInt((b.match(/\d+/)||[0])[0]) || 0);
   });
 
+  const tieneNiv = obraLlevaNivelacion(cot);
   const unidadesHTML = total === 0
     ? '<p style="font-size:12px;color:#aaa;margin:8px 0">Aún no hay unidades. Genera o agrega abajo.</p>'
-    : '<div style="margin:10px 0">' + claves.map(nv => obraNivelHTML(folio, nv, grupos[nv])).join('') + '</div>';
+    : '<div style="margin:10px 0">' + claves.map(nv => obraNivelHTML(folio, nv, grupos[nv], tieneNiv)).join('') + '</div>';
 
   return `
   <div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">
