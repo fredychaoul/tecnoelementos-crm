@@ -3281,10 +3281,53 @@ function obraSuministroContratado(cot) {
     .reduce((s,p) => s + (parseFloat(p.cantidad)||0), 0);
 }
 
-// % de suministro entregado, medido POR VALOR ($). Canónico = avance_pct;
-// las obras activadas antes (que guardaban m²) lo derivan de suministrado/contratado.
+// Artículos del suministro = cada producto de la cotización con su cantidad
+// y unidad propias (m², ml, piezas, cajas…). Indexados por su posición.
+function obraUnidadLabel(u) {
+  const x = String(u || '').toUpperCase().replace('²','2').trim();
+  if (x === 'M2') return 'm²';
+  if (x === 'PIEZA' || x === 'PZAS' || x === 'PZA' || x === 'PIEZAS') return 'pz';
+  if (x === 'ML') return 'ml';
+  if (x === 'CAJA' || x === 'CAJAS') return 'cajas';
+  return (u ? String(u).toLowerCase() : 'u');
+}
+function obraSuministroArticulos(cot) {
+  return (cot.productos || []).map((p, i) => ({
+    idx: i,
+    nombre: p.nombre || p.servicio || ('Artículo ' + (i + 1)),
+    unidad: obraUnidadLabel(p.unidad),
+    contratado: parseFloat(p.cantidad) || 0,
+    total: parseFloat(p.total) || 0
+  })).filter(a => a.total > 0 || a.contratado > 0);
+}
+// Cantidad acumulada entregada por artículo (suma de todas las entregas).
+function obraEntregadoPorArticulo(cot) {
+  const ent = (cot.seguimiento && cot.seguimiento.suministro && cot.seguimiento.suministro.entregas) || [];
+  const acc = {};
+  ent.forEach(e => {
+    const it = e.items || {};
+    Object.keys(it).forEach(k => { acc[k] = (acc[k] || 0) + (parseFloat(it[k]) || 0); });
+  });
+  return acc;
+}
+// % de suministro entregado, ponderado por VALOR pero a partir de las cantidades
+// físicas entregadas por artículo. Si no hay entregas, cae al % previo (avance_pct
+// o m² capturados antes) para no romper obras viejas.
 function obraSuministroPct(cot) {
   const s = (cot.seguimiento && cot.seguimiento.suministro) || {};
+  const ent = s.entregas || [];
+  const arts = obraSuministroArticulos(cot);
+  if (ent.length && arts.length) {
+    const acc = obraEntregadoPorArticulo(cot);
+    let num = 0, den = 0;
+    arts.forEach(a => {
+      den += a.total;
+      const e = Math.min(a.contratado, acc[a.idx] || 0);
+      const frac = a.contratado > 0 ? e / a.contratado : 0;
+      num += frac * a.total;
+    });
+    return den > 0 ? Math.min(100, Math.round(num / den * 100)) : 0;
+  }
   if (typeof s.avance_pct === 'number') return Math.max(0, Math.min(100, Math.round(s.avance_pct)));
   return obraPct(s.suministrado || 0, s.contratado || 0);
 }
@@ -4142,6 +4185,71 @@ function obraBarraHTML(label, pct, est, rightHTML, extraHTML) {
 const obraTab = {};
 function obraSetTab(folio, tab) { obraTab[String(folio)] = tab; renderObra(); }
 
+// ── Entregas parciales de suministro (con fecha, por artículo) ──────────────
+const obraEntregaDraft = {}; // folio -> { fecha, nota, items:{idx:cant} }  (null = cerrado)
+function obraEntregaIniciar(folio) {
+  obraEntregaDraft[String(folio)] = { fecha: obraHoy(), nota: '', items: {} };
+  renderObra();
+}
+function obraEntregaCancelar(folio) {
+  delete obraEntregaDraft[String(folio)];
+  renderObra();
+}
+// Estos onchange escriben en el borrador SIN re-render (no perder foco al teclear)
+function obraEntregaSetFecha(folio, val) { const d = obraEntregaDraft[String(folio)]; if (d) d.fecha = val; }
+function obraEntregaSetNota(folio, val)  { const d = obraEntregaDraft[String(folio)]; if (d) d.nota = val; }
+function obraEntregaSetItem(folio, idx, val) {
+  const d = obraEntregaDraft[String(folio)]; if (!d) return;
+  const n = Math.max(0, parseFloat(val) || 0);
+  if (n > 0) d.items[idx] = n; else delete d.items[idx];
+}
+async function obraEntregaGuardar(folio) {
+  const d = obraEntregaDraft[String(folio)];
+  if (!d) return;
+  if (!Object.keys(d.items).length) { mostrarToast('Anota al menos un artículo entregado', 'error'); return; }
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  if (!cot.seguimiento.suministro) cot.seguimiento.suministro = {};
+  if (!Array.isArray(cot.seguimiento.suministro.entregas)) cot.seguimiento.suministro.entregas = [];
+  cot.seguimiento.suministro.entregas.push({
+    id: 'e' + Date.now(),
+    fecha: d.fecha || obraHoy(),
+    nota: (d.nota || '').trim(),
+    items: { ...d.items }
+  });
+  delete obraEntregaDraft[String(folio)];
+  await obraGuardar(lista, cot);
+  mostrarToast('Entrega registrada', 'success');
+  renderObra();
+}
+// Atajo: registra de un toque todo lo que falta por entregar (fecha = hoy)
+async function obraEntregarTodo(folio) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento) return;
+  const arts = obraSuministroArticulos(cot);
+  const acc = obraEntregadoPorArticulo(cot);
+  const items = {};
+  arts.forEach(a => { const falta = Math.round((a.contratado - (acc[a.idx] || 0)) * 100) / 100; if (falta > 0) items[a.idx] = falta; });
+  if (!Object.keys(items).length) { mostrarToast('Ya está todo entregado', 'info'); return; }
+  if (!cot.seguimiento.suministro) cot.seguimiento.suministro = {};
+  if (!Array.isArray(cot.seguimiento.suministro.entregas)) cot.seguimiento.suministro.entregas = [];
+  cot.seguimiento.suministro.entregas.push({ id: 'e' + Date.now(), fecha: obraHoy(), nota: 'Entrega total', items });
+  await obraGuardar(lista, cot);
+  mostrarToast('Suministro completo registrado', 'success');
+  renderObra();
+}
+async function obraEliminarEntrega(folio, id) {
+  const lista = await getCotizaciones();
+  const cot = lista.find(c => String(c.folio) === String(folio));
+  if (!cot || !cot.seguimiento || !cot.seguimiento.suministro) return;
+  const arr = cot.seguimiento.suministro.entregas || [];
+  cot.seguimiento.suministro.entregas = arr.filter(e => e.id !== id);
+  await obraGuardar(lista, cot);
+  renderObra();
+}
+
 // Botones rápidos de % (1 toque) para una partida de mano de obra
 function obraQuickPct(folio, tipo, actual) {
   return '<div style="display:flex;gap:5px;margin-top:8px">' +
@@ -4159,22 +4267,102 @@ function obraQuickSuministro(folio, cot) {
   </div>`;
 }
 
-function obraAvanceHTML(cot) {
-  const s = cot.seguimiento, folio = cot.folio;
-  const supPct = obraSuministroPct(cot);
-  const supEst = obraEstado(supPct);
-  const impSum = obraImporteSuministro(cot);
-  const impEnt = Math.round(impSum * supPct) / 100;
-  const fmt = n => '$' + Math.round(n).toLocaleString('es-MX');
+function obraFechaCorta(iso) {
+  if (!iso) return '';
+  const p = String(iso).split('-');
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0].slice(2)}` : iso;
+}
+
+// Suministro por artículo con entregas parciales fechadas
+function obraSuministroEntregasHTML(cot) {
+  const folio = cot.folio, s = cot.seguimiento;
+  const arts = obraSuministroArticulos(cot);
+  const acc  = obraEntregadoPorArticulo(cot);
+  const pct  = obraSuministroPct(cot);
+  const est  = obraEstado(pct);
+  const entregas = (s.suministro && s.suministro.entregas) || [];
+  const draft = obraEntregaDraft[String(folio)];
+  const num = n => (Math.round((parseFloat(n)||0)*100)/100).toLocaleString('es-MX');
+
   let html = `
   <div class="obra-av-row">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:14px;font-weight:600">📦 Suministro de material</span>
-      <span style="font-size:12px;color:${supEst.color};font-weight:600">${fmt(impEnt)} / ${fmt(impSum)} · ${supPct}%</span>
+      <span style="font-size:13px;color:${est.color};font-weight:700">${pct}%</span>
     </div>
-    <div class="obra-bar-track" style="margin-top:8px"><div class="obra-bar-fill" style="background:${supEst.color};width:${supPct}%"></div></div>
-    ${obraQuickSuministro(folio, cot)}
-  </div>`;
+    <div class="obra-bar-track" style="margin-top:8px"><div class="obra-bar-fill" style="background:${est.color};width:${pct}%"></div></div>`;
+
+  if (arts.length) {
+    html += '<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">';
+    html += arts.map(a => {
+      const ent = acc[a.idx] || 0, ap = obraPct(ent, a.contratado), ae = obraEstado(ap);
+      const falta = Math.round((a.contratado - ent)*100)/100;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px">
+        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.nombre}">${a.nombre}</span>
+        <span style="color:${ae.color};font-weight:600;white-space:nowrap">${num(ent)} / ${num(a.contratado)} ${a.unidad}${falta>0?` · faltan ${num(falta)}`:' ✓'}</span>
+      </div>`;
+    }).join('');
+    html += '</div>';
+  } else {
+    html += '<div style="margin-top:8px;font-size:12px;color:#999">Esta cotización no tiene artículos de suministro.</div>';
+  }
+
+  if (!draft && arts.length) {
+    html += `<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+      <button onclick="obraEntregaIniciar('${folio}')" style="background:#1E6B3C;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">➕ Registrar entrega</button>
+      ${pct<100?`<button onclick="obraEntregarTodo('${folio}')" style="background:none;border:1px solid #ddd;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:600;color:#555;cursor:pointer">✓ Entregar todo lo faltante</button>`:''}
+    </div>`;
+  } else if (draft) {
+    html += `<div style="margin-top:12px;border:1px solid #e3e3e3;border-radius:11px;padding:12px;background:#FAFAFA">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:12px;font-weight:700">Nueva entrega</span>
+        <input type="date" value="${draft.fecha}" onchange="obraEntregaSetFecha('${folio}',this.value)" style="padding:6px 8px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">`;
+    html += arts.map(a => {
+      const ent = acc[a.idx] || 0, falta = Math.round((a.contratado - ent)*100)/100;
+      const val = draft.items[a.idx] != null ? draft.items[a.idx] : '';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px" title="${a.nombre}">${a.nombre} <span style="color:#aaa">(falta ${num(falta)} ${a.unidad})</span></span>
+        <input type="number" min="0" step="0.01" value="${val}" placeholder="0" onchange="obraEntregaSetItem('${folio}',${a.idx},this.value)" style="width:90px;padding:7px 6px;border:1px solid #ddd;border-radius:8px;font-size:12px;text-align:right">
+      </div>`;
+    }).join('');
+    html += `</div>
+      <input type="text" value="${(draft.nota||'').replace(/"/g,'&quot;')}" placeholder="Nota / remisión (opcional)" onchange="obraEntregaSetNota('${folio}',this.value)" style="width:100%;box-sizing:border-box;margin-top:9px;padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+      <div style="display:flex;gap:6px;margin-top:10px">
+        <button onclick="obraEntregaGuardar('${folio}')" style="background:#1E6B3C;color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">Guardar entrega</button>
+        <button onclick="obraEntregaCancelar('${folio}')" style="background:none;border:1px solid #ddd;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:600;color:#777;cursor:pointer">Cancelar</button>
+      </div>
+    </div>`;
+  }
+
+  if (entregas.length) {
+    const ordenadas = entregas.slice().sort((x,y)=> (x.fecha < y.fecha ? 1 : -1));
+    html += '<div style="margin-top:12px"><div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Historial de entregas</div>';
+    html += ordenadas.map(e => {
+      const resumen = Object.keys(e.items||{}).map(k => {
+        const a = arts.find(x => String(x.idx) === String(k));
+        return `${num(e.items[k])} ${a?a.unidad:''} ${a?a.nombre:('art '+k)}`;
+      }).join(' · ');
+      return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:12px">
+        <div style="flex:1;min-width:0">
+          <span style="font-weight:600">${obraFechaCorta(e.fecha)}</span>
+          <span style="color:#666"> — ${resumen}</span>
+          ${e.nota?`<div style="color:#999;font-size:11px">${e.nota}</div>`:''}
+        </div>
+        <button onclick="obraEliminarEntrega('${folio}','${e.id}')" style="background:none;border:none;color:#c66;font-size:11px;cursor:pointer;white-space:nowrap">eliminar</button>
+      </div>`;
+    }).join('');
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function obraAvanceHTML(cot) {
+  const s = cot.seguimiento, folio = cot.folio;
+  let html = obraSuministroEntregasHTML(cot);
   const manoKeys = Object.keys(s.manoObra || {});
   const mapaPct = obraMapaPct(cot);
   if (manoKeys.length) {
