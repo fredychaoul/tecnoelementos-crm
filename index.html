@@ -3387,7 +3387,15 @@ async function obraSetAvance(folio, tipo, val) {
 }
 
 // ── Mapa de obra: subdivisión por niveles/departamentos (obras de volumen) ─
-const OBRA_UNIDAD_ESTADOS = ['pendiente', 'proceso', 'completo'];
+const OBRA_UNIDAD_ESTADOS = ['sin_iniciar', 'en_proceso', 'concluido', 'firmado', 'entregado'];
+
+// Compat con el modelo viejo de 3 estados
+function obraNormalizarEstadoUnidad(e) {
+  if (e === 'pendiente') return 'sin_iniciar';
+  if (e === 'proceso')   return 'en_proceso';
+  if (e === 'completo')  return 'concluido';
+  return OBRA_UNIDAD_ESTADOS.includes(e) ? e : 'sin_iniciar';
+}
 
 function obraVolumenDe(cot) {
   // Compat: obras activadas antes de existir 'volumen'
@@ -3396,9 +3404,13 @@ function obraVolumenDe(cot) {
 }
 
 function obraEstadoUnidad(estado) {
-  if (estado === 'completo') return { txt:'Completo',   color:'#1E6B3C', bg:'#E3F4E9' };
-  if (estado === 'proceso')  return { txt:'En proceso', color:'#9A6B00', bg:'#FBF3DD' };
-  return { txt:'Pendiente', color:'#8B2020', bg:'#FBE3E3' };
+  switch (obraNormalizarEstadoUnidad(estado)) {
+    case 'entregado': return { txt:'Entregado',  color:'#1E6B3C', bg:'#E3F4E9' }; // verde
+    case 'firmado':   return { txt:'Firmado',    color:'#1A7F8E', bg:'#E0F3F5' }; // teal
+    case 'concluido': return { txt:'Concluido',  color:'#2E6BB8', bg:'#E4EEF9' }; // azul
+    case 'en_proceso':return { txt:'En proceso', color:'#9A6B00', bg:'#FBF3DD' }; // amarillo
+    default:          return { txt:'Sin iniciar',color:'#8B2020', bg:'#FBE3E3' }; // rojo
+  }
 }
 
 async function obraVolumenActivar(folio) {
@@ -3431,7 +3443,7 @@ async function obraGenerarUnidades(folio) {
   const base = vol.unidades.reduce((m,u) => Math.max(m, u.num || 0), 0);
   for (let i = 1; i <= n; i++) {
     const num = base + i;
-    vol.unidades.push({ id: 'u' + num + '-' + (base + i), num, nombre: vol.unidadLabel + ' ' + num, estado: 'pendiente' });
+    vol.unidades.push({ id: 'u' + num + '-' + (base + i), num, nombre: vol.unidadLabel + ' ' + num, estado: 'sin_iniciar' });
   }
   await obraGuardar(lista, cot);
   renderObra();
@@ -3443,7 +3455,7 @@ async function obraAgregarUnidad(folio) {
   if (!cot || !cot.seguimiento) return;
   const vol = obraVolumenDe(cot);
   const num = vol.unidades.reduce((m,u) => Math.max(m, u.num || 0), 0) + 1;
-  vol.unidades.push({ id: 'u' + num + '-' + vol.unidades.length, num, nombre: vol.unidadLabel + ' ' + num, estado: 'pendiente' });
+  vol.unidades.push({ id: 'u' + num + '-' + vol.unidades.length, num, nombre: vol.unidadLabel + ' ' + num, estado: 'sin_iniciar' });
   await obraGuardar(lista, cot);
   renderObra();
 }
@@ -3455,7 +3467,7 @@ async function obraCiclarUnidad(folio, uid) {
   if (!cot || !cot.seguimiento) return;
   const u = obraVolumenDe(cot).unidades.find(x => x.id === uid);
   if (!u) return;
-  const i = OBRA_UNIDAD_ESTADOS.indexOf(u.estado);
+  const i = OBRA_UNIDAD_ESTADOS.indexOf(obraNormalizarEstadoUnidad(u.estado));
   u.estado = OBRA_UNIDAD_ESTADOS[(i + 1) % OBRA_UNIDAD_ESTADOS.length];
   await obraGuardar(lista, cot);
   renderObra();
@@ -3535,7 +3547,7 @@ async function obraCrearUnidadesDesde(folio, nombres, label) {
   const vol = obraVolumenDe(cot);
   if (label) vol.unidadLabel = label;
   let base = vol.unidades.reduce((m,u)=>Math.max(m,u.num||0),0);
-  nombres.forEach(nombre => { base++; vol.unidades.push({ id:'u'+base+'-'+vol.unidades.length, num:base, nombre, estado:'pendiente' }); });
+  nombres.forEach(nombre => { base++; vol.unidades.push({ id:'u'+base+'-'+vol.unidades.length, num:base, nombre, estado:'sin_iniciar' }); });
   await obraGuardar(lista, cot);
   mostrarToast(nombres.length + ' unidades creadas', 'success');
   renderObra();
@@ -3630,9 +3642,11 @@ function obraMapaHTML(cot) {
   }
 
   const total = vol.unidades.length;
-  const comp  = vol.unidades.filter(u => u.estado === 'completo').length;
-  const proc  = vol.unidades.filter(u => u.estado === 'proceso').length;
-  const pend  = total - comp - proc;
+  const tally = { sin_iniciar:0, en_proceso:0, concluido:0, firmado:0, entregado:0 };
+  vol.unidades.forEach(u => { tally[obraNormalizarEstadoUnidad(u.estado)]++; });
+  const ORDEN = [['entregado','entregados'],['firmado','firmados'],['concluido','concluidos'],['en_proceso','en proceso'],['sin_iniciar','sin iniciar']];
+  const resumen = ORDEN.filter(([k]) => tally[k] > 0)
+    .map(([k,lbl]) => `<strong style="color:${obraEstadoUnidad(k).color}">${tally[k]}</strong> ${lbl}`).join(' · ');
 
   const chips = vol.unidades.map(u => {
     const e = obraEstadoUnidad(u.estado);
@@ -3655,13 +3669,9 @@ function obraMapaHTML(cot) {
   <div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;flex-wrap:wrap">
       <span style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px">🗺️ Mapa de obra</span>
-      <span style="font-size:12px;color:#555">
-        <strong style="color:#1E6B3C">${comp}</strong> completos ·
-        <strong style="color:#9A6B00">${proc}</strong> en proceso ·
-        <strong style="color:#8B2020">${pend}</strong> pendientes
-        <span style="color:#aaa">(${total})</span>
-      </span>
+      <span style="font-size:12px;color:#555">${resumen || 'sin unidades'} <span style="color:#aaa">(${total})</span></span>
     </div>
+    <div style="font-size:10.5px;color:#aaa;margin:-2px 0 8px">Clic en una unidad para avanzar su estado: Sin iniciar → En proceso → Concluido → Firmado → Entregado</div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
       <label style="font-size:11px;color:#888">Dividir por:</label>
       <select onchange="obraVolumenSetLabel('${folio}', this.value)" class="obra-input" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
@@ -3930,7 +3940,7 @@ function obraEstaTerminada(cot) {
   if (!cot.seguimiento) return false;
   if (obraResumen(cot).estadoGlobal !== 'completo') return false;
   const vol = cot.seguimiento.volumen;
-  if (vol && vol.activo && vol.unidades.length) return vol.unidades.every(u => u.estado === 'completo');
+  if (vol && vol.activo && vol.unidades.length) return vol.unidades.every(u => obraNormalizarEstadoUnidad(u.estado) === 'entregado');
   return true;
 }
 
