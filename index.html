@@ -3281,6 +3281,14 @@ function obraSuministroContratado(cot) {
     .reduce((s,p) => s + (parseFloat(p.cantidad)||0), 0);
 }
 
+// % de suministro entregado, medido POR VALOR ($). Canónico = avance_pct;
+// las obras activadas antes (que guardaban m²) lo derivan de suministrado/contratado.
+function obraSuministroPct(cot) {
+  const s = (cot.seguimiento && cot.seguimiento.suministro) || {};
+  if (typeof s.avance_pct === 'number') return Math.max(0, Math.min(100, Math.round(s.avance_pct)));
+  return obraPct(s.suministrado || 0, s.contratado || 0);
+}
+
 // Detecta partidas de mano de obra (y sus m² contratados) desde la instalación
 function obraDetectarManoObra(cot) {
   const m = {};
@@ -3320,7 +3328,7 @@ function obraResumen(cot) {
   const s = cot.seguimiento;
   const mapaPct = obraMapaPct(cot); // null si no es obra de volumen con unidades
   const partidas = [];
-  if (s.suministro.contratado > 0) partidas.push(obraPct(s.suministro.suministrado, s.suministro.contratado));
+  if (obraImporteSuministro(cot) > 0) partidas.push(obraSuministroPct(cot));
   if (mapaPct !== null) {
     partidas.push(mapaPct); // en volumen, el mapa ES el avance de mano de obra
   } else {
@@ -3370,7 +3378,7 @@ async function obraActivar(folio) {
   cot.seguimiento = {
     activa: true,
     fechaActivacion: new Date().toISOString(),
-    suministro: { contratado: Math.round(obraSuministroContratado(cot)*100)/100, suministrado: 0 },
+    suministro: { contratado: Math.round(obraSuministroContratado(cot)*100)/100, suministrado: 0, avance_pct: 0 },
     manoObra,
     volumen: { activo: false, unidadLabel: 'Nivel', unidades: [] },
     estimaciones: [],
@@ -3393,11 +3401,12 @@ async function obraDesactivar(folio) {
 }
 
 // ── Edición de avance ───────────────────────────────────────────────────
-async function obraSetSuministrado(folio, val) {
+async function obraSetSuministroPct(folio, val) {
   const lista = await getCotizaciones();
   const cot = lista.find(c => String(c.folio) === String(folio));
   if (!cot || !cot.seguimiento) return;
-  cot.seguimiento.suministro.suministrado = Math.max(0, parseFloat(val)||0);
+  if (!cot.seguimiento.suministro) cot.seguimiento.suministro = {};
+  cot.seguimiento.suministro.avance_pct = Math.max(0, Math.min(100, Math.round(parseFloat(val)||0)));
   await obraGuardar(lista, cot);
   renderObra();
 }
@@ -3851,10 +3860,10 @@ function obraActualizarFechasAuto(cot) {
     if (pct > 0 && !obj.inicioReal) obj.inicioReal = hoy;
     if (pct >= 100) { if (!obj.finReal) obj.finReal = hoy; } else { obj.finReal = ''; }
   };
-  tocar(s.suministro, obraPct(s.suministro.suministrado, s.suministro.contratado));
+  tocar(s.suministro, obraSuministroPct(cot));
   Object.keys(s.manoObra || {}).forEach(t => tocar(s.manoObra[t], s.manoObra[t].avance_pct || 0));
   // obra completa
-  const algoIniciado = obraPct(s.suministro.suministrado, s.suministro.contratado) > 0 ||
+  const algoIniciado = obraSuministroPct(cot) > 0 ||
     Object.keys(s.manoObra || {}).some(t => (s.manoObra[t].avance_pct||0) > 0);
   if (algoIniciado && !s.fechas.inicioReal) s.fechas.inicioReal = hoy;
   if (obraEstaTerminada(cot)) { if (!s.fechas.finReal) s.fechas.finReal = hoy; } else { s.fechas.finReal = ''; }
@@ -3917,10 +3926,10 @@ function obraFechasPartidaHTML(folio, tipo, obj) {
 }
 
 // ── Estimación por periodo ────────────────────────────────────────────────
-// Importe contratado del suministro = Σ totales de productos vendidos en M²
+// Importe contratado del suministro = Σ totales de TODOS los productos
+// (cualquier unidad: m², piezas, accesorios, adhesivos, molduras, vigas…).
 function obraImporteSuministro(cot) {
   return (cot.productos || [])
-    .filter(p => obraEsM2(p.unidad))
     .reduce((s,p) => s + (parseFloat(p.total)||0), 0);
 }
 // Importe contratado de mano de obra por tipo = Σ totales de la instalación
@@ -3937,7 +3946,7 @@ function obraConceptos(cot) {
   const s = cot.seguimiento;
   const out = [];
   const impSum = obraImporteSuministro(cot);
-  const supPct = obraPct(s.suministro.suministrado, s.suministro.contratado);
+  const supPct = obraSuministroPct(cot);
   out.push({ concepto:'Suministro de material', contratado:impSum, avancePct:supPct, ejecutado: Math.round(impSum*supPct)/100 });
   const impMO = obraImporteManoObraPorTipo(cot);
   const mapaPct = obraMapaPct(cot); // en volumen, la mano de obra avanza según el mapa
@@ -4086,7 +4095,7 @@ function obraFilaCompactaHTML(cot) {
 
   // "qué falta" — partidas con avance < 100
   const faltan = [];
-  if (s.suministro.contratado > 0 && obraPct(s.suministro.suministrado, s.suministro.contratado) < 100) faltan.push('suministro');
+  if (obraImporteSuministro(cot) > 0 && obraSuministroPct(cot) < 100) faltan.push('suministro');
   const mapaPct = obraMapaPct(cot);
   if (mapaPct !== null) {
     if (mapaPct < 100) faltan.push('ejecución de unidades');   // volumen: lo mide el mapa
@@ -4139,31 +4148,32 @@ function obraQuickPct(folio, tipo, actual) {
     [0,25,50,75,100].map(v => `<button class="obra-qbtn${actual==v?' on':''}" onclick="obraSetAvance('${folio}','${tipo}',${v})">${v}</button>`).join('') +
     '</div>';
 }
-// Suministro: botones rápidos + campo exacto en m²
-function obraQuickSuministro(folio, s) {
-  const contr = s.suministro.contratado;
-  const mitad = Math.round(contr / 2 * 100) / 100;
-  const sum = s.suministro.suministrado;
+// Suministro: botones rápidos + campo exacto en % (por valor de la cotización)
+function obraQuickSuministro(folio, cot) {
+  const pct = obraSuministroPct(cot);
   return `<div style="display:flex;gap:5px;align-items:center;margin-top:8px;flex-wrap:wrap">
-    <button class="obra-qbtn${sum===0?' on':''}" onclick="obraSetSuministrado('${folio}',0)">0</button>
-    <button class="obra-qbtn${sum===mitad?' on':''}" onclick="obraSetSuministrado('${folio}',${mitad})">½</button>
-    <button class="obra-qbtn${sum===contr?' on':''}" onclick="obraSetSuministrado('${folio}',${contr})">Completo</button>
-    <input type="number" min="0" step="0.01" value="${sum}" onchange="obraSetSuministrado('${folio}',this.value)" class="obra-input" style="width:84px;padding:8px 6px;border:1px solid #ddd;border-radius:9px;font-size:13px;text-align:right" title="m² exactos"> m²
+    <button class="obra-qbtn${pct===0?' on':''}" onclick="obraSetSuministroPct('${folio}',0)">0</button>
+    <button class="obra-qbtn${pct===50?' on':''}" onclick="obraSetSuministroPct('${folio}',50)">½</button>
+    <button class="obra-qbtn${pct===100?' on':''}" onclick="obraSetSuministroPct('${folio}',100)">Completo</button>
+    <input type="number" min="0" max="100" step="1" value="${pct}" onchange="obraSetSuministroPct('${folio}',this.value)" class="obra-input" style="width:70px;padding:8px 6px;border:1px solid #ddd;border-radius:9px;font-size:13px;text-align:right" title="% exacto entregado"> %
   </div>`;
 }
 
 function obraAvanceHTML(cot) {
   const s = cot.seguimiento, folio = cot.folio;
-  const supPct = obraPct(s.suministro.suministrado, s.suministro.contratado);
+  const supPct = obraSuministroPct(cot);
   const supEst = obraEstado(supPct);
+  const impSum = obraImporteSuministro(cot);
+  const impEnt = Math.round(impSum * supPct) / 100;
+  const fmt = n => '$' + Math.round(n).toLocaleString('es-MX');
   let html = `
   <div class="obra-av-row">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:14px;font-weight:600">📦 Suministro de material</span>
-      <span style="font-size:12px;color:${supEst.color};font-weight:600">${s.suministro.suministrado.toLocaleString('es-MX')} / ${s.suministro.contratado.toLocaleString('es-MX')} m² · ${supPct}%</span>
+      <span style="font-size:12px;color:${supEst.color};font-weight:600">${fmt(impEnt)} / ${fmt(impSum)} · ${supPct}%</span>
     </div>
     <div class="obra-bar-track" style="margin-top:8px"><div class="obra-bar-fill" style="background:${supEst.color};width:${supPct}%"></div></div>
-    ${obraQuickSuministro(folio, s)}
+    ${obraQuickSuministro(folio, cot)}
   </div>`;
   const manoKeys = Object.keys(s.manoObra || {});
   const mapaPct = obraMapaPct(cot);
