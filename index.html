@@ -602,6 +602,17 @@
     .obra-detalle { margin:-2px 0 14px; animation: obraIn .3s ease both; }
     .obra-detalle > .obra-card { margin-bottom:0; }
     .obra-fecha { border:1px solid #ddd; border-radius:5px; padding:2px 5px; font-size:11px; font-family:inherit; color:#555; }
+    .obra-card-lista { border:1px solid #ECECEC; border-radius:12px; padding:14px 16px; margin-bottom:10px; cursor:pointer; background:#fff; transition:box-shadow .18s ease, border-color .18s ease, transform .12s ease; }
+    .obra-card-lista:hover { box-shadow:0 4px 14px rgba(0,0,0,.07); border-color:#ddd; transform:translateY(-1px); }
+    .obra-card-lista.open { border-color:#1A1A1A; }
+    .obra-tabs { display:flex; gap:4px; background:#F2F2F2; border-radius:10px; padding:4px; }
+    .obra-tab-btn { flex:1; text-align:center; font-size:12.5px; font-weight:600; padding:8px 0; border:none; border-radius:7px; background:none; color:#888; cursor:pointer; transition:all .15s; }
+    .obra-tab-btn.on { background:#fff; color:#1A1A1A; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+    .obra-qbtn { flex:1; min-width:40px; text-align:center; font-size:13px; padding:10px 0; border:1px solid #E0E0E0; border-radius:9px; background:#fff; cursor:pointer; transition:all .12s; color:#555; }
+    .obra-qbtn:hover { border-color:#999; }
+    .obra-qbtn.on { background:#1A1A1A; color:#fff; border-color:#1A1A1A; font-weight:700; }
+    .obra-av-row { padding:12px 0; border-bottom:1px solid #F2F2F2; }
+    .obra-av-row:last-child { border-bottom:none; }
   </style>
   <div class="stats" style="grid-template-columns:repeat(4,1fr)">
     <div class="stat"><div class="label">Obras Activas</div><div class="value" id="obra-stat-activas">0</div></div>
@@ -627,8 +638,8 @@
   </div>
 
   <div class="card">
-    <h2>Cotizaciones Listas para Activar</h2>
-    <p style="font-size:12px;color:#888;margin-bottom:16px">Cotizaciones ganadas o con material/instalación que aún no están en seguimiento. Al activar, se detectan automáticamente los m² y las partidas de mano de obra.</p>
+    <h2>Cotizaciones ganadas por activar</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:16px">Solo aparecen las cotizaciones marcadas como <strong>Ganada</strong> en el CRM. Al activar, se detectan automáticamente los m² y las partidas de mano de obra.</p>
     <div id="obra-disponibles-container"></div>
   </div>
 </div>
@@ -3949,28 +3960,33 @@ function obraDotHTML(label, pct) {
   return `<span title="${label}: ${pct}%" style="width:10px;height:10px;border-radius:50%;background:${e.color};display:inline-block;flex:none"></span>`;
 }
 
-// Fila compacta del tablero (clic para expandir el detalle)
+// Tarjeta de lista — clic para abrir el detalle
 function obraFilaCompactaHTML(cot) {
   const folio = cot.folio;
   const s = cot.seguimiento;
   const res = obraResumen(cot);
   const open = obraExpandidas.has(String(folio));
   const gColor = res.estadoGlobal==='completo' ? '#1E6B3C' : res.estadoGlobal==='pendiente' ? '#8B2020' : '#9A6B00';
-  const dots = [obraDotHTML('Suministro', obraPct(s.suministro.suministrado, s.suministro.contratado))];
-  Object.keys(s.manoObra||{}).forEach(t => {
-    const tipo = OBRA_TIPOS.find(x=>x.key===t) || { label:t };
-    dots.push(obraDotHTML(tipo.label, s.manoObra[t].avance_pct||0));
+
+  // "qué falta" — partidas con avance < 100
+  const faltan = [];
+  if (s.suministro.contratado > 0 && obraPct(s.suministro.suministrado, s.suministro.contratado) < 100) faltan.push('suministro');
+  Object.keys(s.manoObra || {}).forEach(t => {
+    if ((s.manoObra[t].avance_pct || 0) < 100) { const tp = OBRA_TIPOS.find(x=>x.key===t) || { label:t }; faltan.push(tp.label.toLowerCase()); }
   });
+  const faltaTxt = faltan.length ? ('Falta: ' + faltan.slice(0,3).join(', ') + (faltan.length>3?'…':'')) : 'Lista para entregar';
+  const faltaColor = faltan.length ? '#888' : '#1E6B3C';
+  const atraso = obraAtrasoBadge((s.fechas||{}).finProg, (s.fechas||{}).finReal);
+
   return `
-  <div class="obra-fila" onclick="obraToggleExpandir('${folio}')">
-    <span style="color:#bbb;font-size:13px;width:14px;flex:none">${open?'▾':'▸'}</span>
-    <span style="font-weight:700;font-size:13px;white-space:nowrap;flex:none">TEC-${String(folio).padStart(4,'0')}</span>
-    <span style="font-size:13px;flex:none;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cot.cliente||'—'}</span>
-    <span style="font-size:11px;color:#aaa;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cot.proyecto||cot.ciudad||''}</span>
-    <span style="display:flex;gap:4px;align-items:center;flex:none">${dots.join('')}</span>
-    <span style="width:90px;flex:none"><span class="obra-bar-track" style="height:7px;display:block"><span class="obra-bar-fill" style="background:${gColor};width:${res.avgPct}%;display:block"></span></span></span>
-    <span class="obra-pill" style="background:${gColor};color:#fff;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap;flex:none">${res.avgPct}%</span>
-    ${obraAtrasoBadge((s.fechas||{}).finProg, (s.fechas||{}).finReal)}
+  <div class="obra-card-lista${open?' open':''}" onclick="obraToggleExpandir('${folio}')">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+      <span style="font-weight:700;font-size:14px">${cot.cliente||'—'}</span>
+      <span style="font-size:18px;font-weight:700;color:${gColor};flex:none">${res.avgPct}%</span>
+    </div>
+    <div style="font-size:12px;color:#888;margin-bottom:8px">TEC-${String(folio).padStart(4,'0')} · ${cot.proyecto || cot.ciudad || 'Sin proyecto'}</div>
+    <div class="obra-bar-track" style="height:7px"><div class="obra-bar-fill" style="background:${gColor};width:${res.avgPct}%"></div></div>
+    <div style="margin-top:8px;font-size:11px;color:${faltaColor};display:flex;align-items:center;gap:6px;flex-wrap:wrap">${faltan.length?'⚠️':'✓'} ${faltaTxt} ${atraso}</div>
   </div>`;
 }
 
@@ -3992,50 +4008,115 @@ function obraBarraHTML(label, pct, est, rightHTML, extraHTML) {
   </div>`;
 }
 
+// Estado de pestaña por obra
+const obraTab = {};
+function obraSetTab(folio, tab) { obraTab[String(folio)] = tab; renderObra(); }
+
+// Botones rápidos de % (1 toque) para una partida de mano de obra
+function obraQuickPct(folio, tipo, actual) {
+  return '<div style="display:flex;gap:5px;margin-top:8px">' +
+    [0,25,50,75,100].map(v => `<button class="obra-qbtn${actual==v?' on':''}" onclick="obraSetAvance('${folio}','${tipo}',${v})">${v}</button>`).join('') +
+    '</div>';
+}
+// Suministro: botones rápidos + campo exacto en m²
+function obraQuickSuministro(folio, s) {
+  const contr = s.suministro.contratado;
+  const mitad = Math.round(contr / 2 * 100) / 100;
+  const sum = s.suministro.suministrado;
+  return `<div style="display:flex;gap:5px;align-items:center;margin-top:8px;flex-wrap:wrap">
+    <button class="obra-qbtn${sum===0?' on':''}" onclick="obraSetSuministrado('${folio}',0)">0</button>
+    <button class="obra-qbtn${sum===mitad?' on':''}" onclick="obraSetSuministrado('${folio}',${mitad})">½</button>
+    <button class="obra-qbtn${sum===contr?' on':''}" onclick="obraSetSuministrado('${folio}',${contr})">Completo</button>
+    <input type="number" min="0" step="0.01" value="${sum}" onchange="obraSetSuministrado('${folio}',this.value)" class="obra-input" style="width:84px;padding:8px 6px;border:1px solid #ddd;border-radius:9px;font-size:13px;text-align:right" title="m² exactos"> m²
+  </div>`;
+}
+
+function obraAvanceHTML(cot) {
+  const s = cot.seguimiento, folio = cot.folio;
+  const supPct = obraPct(s.suministro.suministrado, s.suministro.contratado);
+  const supEst = obraEstado(supPct);
+  let html = `
+  <div class="obra-av-row">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:14px;font-weight:600">📦 Suministro de material</span>
+      <span style="font-size:12px;color:${supEst.color};font-weight:600">${s.suministro.suministrado.toLocaleString('es-MX')} / ${s.suministro.contratado.toLocaleString('es-MX')} m² · ${supPct}%</span>
+    </div>
+    <div class="obra-bar-track" style="margin-top:8px"><div class="obra-bar-fill" style="background:${supEst.color};width:${supPct}%"></div></div>
+    ${obraQuickSuministro(folio, s)}
+  </div>`;
+  const manoKeys = Object.keys(s.manoObra || {});
+  if (manoKeys.length) {
+    html += manoKeys.map(t => {
+      const mo = s.manoObra[t], pct = mo.avance_pct || 0, est = obraEstado(pct);
+      const tipo = OBRA_TIPOS.find(x => x.key === t) || { label:t, icon:'🔧' };
+      return `
+      <div class="obra-av-row">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:14px;font-weight:600">${tipo.icon} ${tipo.label}</span>
+          <span style="font-size:13px;color:${est.color};font-weight:700">${pct}%</span>
+        </div>
+        <div class="obra-bar-track" style="margin-top:8px"><div class="obra-bar-fill" style="background:${est.color};width:${pct}%"></div></div>
+        ${obraQuickPct(folio, t, pct)}
+      </div>`;
+    }).join('');
+  }
+  return html;
+}
+
+// CTA para convertir una obra en "de volumen" (habilita la pestaña Mapa)
+function obraVolumenCTA(folio) {
+  return `
+  <div style="margin-top:14px;text-align:center">
+    <button onclick="obraVolumenActivar('${folio}').then(()=>obraSetTab('${folio}','mapa'))" style="background:#F2F2F2;border:1px dashed #bbb;border-radius:10px;padding:10px 16px;font-size:12px;font-weight:600;color:#555;cursor:pointer">🗺️ ¿Es obra de volumen? Activar mapa por niveles/departamentos</button>
+  </div>`;
+}
+
+function obraFechasTabHTML(cot) {
+  const s = cot.seguimiento, folio = cot.folio;
+  let html = obraFechasObraHTML(cot);
+  html += '<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px">Fechas por partida</div>';
+  html += '<div style="font-size:13px;font-weight:600;margin-bottom:2px">📦 Suministro</div>' + obraFechasPartidaHTML(folio, 'suministro', s.suministro);
+  Object.keys(s.manoObra || {}).forEach(t => {
+    const tipo = OBRA_TIPOS.find(x => x.key === t) || { label:t, icon:'🔧' };
+    html += `<div style="font-size:13px;font-weight:600;margin:10px 0 2px">${tipo.icon} ${tipo.label}</div>` + obraFechasPartidaHTML(folio, t, s.manoObra[t]);
+  });
+  return html;
+}
+
 function obraCardHTML(cot) {
-  const s = cot.seguimiento;
-  const folio = cot.folio;
+  const s = cot.seguimiento, folio = cot.folio;
   const res = obraResumen(cot);
   const gColor = res.estadoGlobal==='completo' ? '#1E6B3C' : res.estadoGlobal==='pendiente' ? '#8B2020' : '#9A6B00';
   const gTxt   = res.estadoGlobal==='completo' ? 'Completa' : res.estadoGlobal==='pendiente' ? 'Por iniciar' : 'En proceso';
+  const esVol = !!(s.volumen && s.volumen.activo);
+  const tab = obraTab[String(folio)] || 'avance';
 
-  const supPct = obraPct(s.suministro.suministrado, s.suministro.contratado);
-  const supBar = obraBarraHTML('📦 Suministro de material', supPct, obraEstado(supPct),
-    `<input type="number" min="0" step="0.01" value="${s.suministro.suministrado}" onchange="obraSetSuministrado('${folio}', this.value)" class="obra-input" style="width:90px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;text-align:right"> / ${s.suministro.contratado.toLocaleString('es-MX')} m²`,
-    obraFechasPartidaHTML(folio, 'suministro', s.suministro));
+  const tabs = [['avance','Avance']];
+  if (esVol) tabs.push(['mapa','Mapa']);
+  tabs.push(['cobro','Cobro'], ['fechas','Fechas']);
+  const tabBar = '<div class="obra-tabs">' + tabs.map(([k,l]) =>
+    `<button class="obra-tab-btn${tab===k?' on':''}" onclick="obraSetTab('${folio}','${k}')">${l}</button>`).join('') + '</div>';
 
-  const manoKeys = Object.keys(s.manoObra || {});
-  const manoHTML = manoKeys.length === 0
-    ? '<p style="font-size:12px;color:#aaa;margin:4px 0">Esta cotización no lleva mano de obra.</p>'
-    : manoKeys.map(t => {
-        const mo = s.manoObra[t];
-        const pct = mo.avance_pct || 0;
-        const tipo = OBRA_TIPOS.find(x => x.key === t) || { label:t, icon:'🔧' };
-        return obraBarraHTML(tipo.icon + ' ' + tipo.label, pct, obraEstado(pct),
-          `<input type="number" min="0" max="100" step="1" value="${pct}" onchange="obraSetAvance('${folio}','${t}', this.value)" class="obra-input" style="width:62px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;text-align:right">% · ${mo.contratado.toLocaleString('es-MX')} m²`,
-          obraFechasPartidaHTML(folio, t, mo));
-      }).join('');
+  let contenido;
+  if (tab === 'mapa' && esVol) contenido = obraMapaHTML(cot);
+  else if (tab === 'cobro')    contenido = obraEstimacionHTML(cot);
+  else if (tab === 'fechas')   contenido = obraFechasTabHTML(cot);
+  else                         contenido = obraAvanceHTML(cot) + (esVol ? '' : obraVolumenCTA(folio));
 
   return `
-  <div class="card obra-card" style="border-left:5px solid ${gColor};padding:20px 24px">
+  <div class="card obra-card" style="border-left:5px solid ${gColor};padding:18px 20px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:12px">
       <div>
-        <div style="font-weight:700;font-size:15px">TEC-${String(folio).padStart(4,'0')} · ${cot.cliente||'—'}</div>
-        <div style="font-size:12px;color:#888">${cot.proyecto || cot.ciudad || 'Sin proyecto'} · Activada ${new Date(s.fechaActivacion).toLocaleDateString('es-MX')}</div>
+        <div style="font-weight:700;font-size:15px">${cot.cliente||'—'}</div>
+        <div style="font-size:12px;color:#888">TEC-${String(folio).padStart(4,'0')} · ${cot.proyecto || cot.ciudad || 'Sin proyecto'}</div>
       </div>
       <div style="text-align:right">
         <span class="obra-pill" style="background:${gColor};color:#fff;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap">${gTxt} · ${res.avgPct}%</span>
         <div><button class="obra-retirar" onclick="obraDesactivar('${folio}')" style="background:none;border:none;color:#bbb;font-size:11px;cursor:pointer;margin-top:6px">retirar</button></div>
       </div>
     </div>
-    ${obraFechasObraHTML(cot)}
-    ${supBar}
-    <div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">
-      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Avance de mano de obra</div>
-      ${manoHTML}
-    </div>
-    ${obraEstimacionHTML(cot)}
-    ${obraMapaHTML(cot)}
+    ${tabBar}
+    <div style="margin-top:14px">${contenido}</div>
   </div>`;
 }
 
@@ -4073,27 +4154,24 @@ async function renderObra() {
   document.getElementById('obra-term-count').textContent = '(' + terminadas.length + ')';
   document.getElementById('obra-terminadas-container').innerHTML = term.map(obraTableroHTML).join('');
 
-  const disp = lista.filter(c => !c.esBorrador && !(c.seguimiento && c.seguimiento.activa) &&
-    (obraSuministroContratado(c) > 0 || obraLlevaManoObra(c)));
+  // Solo cotizaciones GANADAS, no activadas aún
+  const disp = lista.filter(c => !c.esBorrador && c.status === 'Ganada' && !(c.seguimiento && c.seguimiento.activa));
   const dcont = document.getElementById('obra-disponibles-container');
   if (disp.length === 0) {
-    dcont.innerHTML = `<div class="empty-state"><div class="icon">✅</div><p>Todas las cotizaciones con material ya están en seguimiento.</p></div>`;
+    dcont.innerHTML = `<div class="empty-state"><div class="icon">🏆</div><p>No hay cotizaciones ganadas por activar.<br>Marca una cotización como <strong>Ganada</strong> en el CRM para que aparezca aquí.</p></div>`;
   } else {
-    dcont.innerHTML = `<table class="crm-table"><thead><tr>
-        <th>Folio</th><th>Cliente</th><th>Proyecto</th><th>m² material</th><th>Mano de obra</th><th></th>
-      </tr></thead><tbody>` +
-      disp.sort((a,b)=>b.folio-a.folio).map(c => {
-        const m2 = obraSuministroContratado(c);
-        const tipos = Object.keys(obraDetectarManoObra(c)).map(t => (OBRA_TIPOS.find(x=>x.key===t)||{label:t}).label);
-        return `<tr>
-          <td><strong>TEC-${String(c.folio).padStart(4,'0')}</strong></td>
-          <td>${c.cliente||'—'}</td>
-          <td>${c.proyecto||'—'}</td>
-          <td>${m2 ? m2.toLocaleString('es-MX') + ' m²' : '—'}</td>
-          <td>${tipos.length ? tipos.join(', ') : '<span style="color:#aaa">Sin instalación</span>'}</td>
-          <td><button class="btn btn-sm obra-btn" style="background:#1A1A1A;color:#fff;border:none;font-weight:700;white-space:nowrap" onclick="obraActivar('${c.folio}')">+ Activar obra</button></td>
-        </tr>`;
-      }).join('') + `</tbody></table>`;
+    dcont.innerHTML = disp.sort((a,b)=>b.folio-a.folio).map(c => {
+      const m2 = obraSuministroContratado(c);
+      const tipos = Object.keys(obraDetectarManoObra(c)).map(t => (OBRA_TIPOS.find(x=>x.key===t)||{label:t}).label);
+      return `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid #ECECEC;border-radius:10px;padding:12px 14px;margin-bottom:8px">
+        <div style="min-width:0">
+          <div style="font-weight:700;font-size:14px">${c.cliente||'—'}</div>
+          <div style="font-size:12px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">TEC-${String(c.folio).padStart(4,'0')} · ${c.proyecto||c.ciudad||'Sin proyecto'} · ${m2?m2.toLocaleString('es-MX')+' m²':'sin m²'}${tipos.length?' · '+tipos.join(', '):''}</div>
+        </div>
+        <button class="obra-btn" style="background:#1A1A1A;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;flex:none" onclick="obraActivar('${c.folio}')">+ Activar</button>
+      </div>`;
+    }).join('');
   }
 }
 </script>
