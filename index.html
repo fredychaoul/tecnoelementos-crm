@@ -3359,6 +3359,9 @@ const OC_PROVEEDOR_INFO = {
   CAPPA:      { para: '' },        // razón social por capturar
   ONEDECKING: { para: '' }         // razón social por capturar
 };
+// "Facturar a" = entidad de Tecnoelementos a la que el proveedor factura.
+// NUNCA el cliente final (el OC va al proveedor, no se comparte el cliente).
+const OC_FACTURAR_A = '';          // razón social de Tecnoelementos por capturar
 let ocActual = null;
 
 function ocFechaHoy() {
@@ -3377,8 +3380,8 @@ function ocGenerar(cotData) {
     return;
   }
   ocActual = { cot, ocs: r.ocs, pendientes: r.pendientes, meta: {
-    numOrden:'', fecha:ocFechaHoy(), facturarA:cot.cliente||'',
-    obra:cot.proyecto||cot.ciudad||'', folio:'TEC-'+String(cot.folio).padStart(4,'0'),
+    numOrden:'', fecha:ocFechaHoy(), facturarA:OC_FACTURAR_A,
+    obra:'', folio:'TEC-'+String(cot.folio).padStart(4,'0'),
     comprador:'', tc:''
   }};
   ocRenderModal();
@@ -3434,8 +3437,8 @@ function ocRenderModal() {
     <div style="display:flex;flex-wrap:wrap;gap:10px;background:#FAFAFA;border:1px solid #eee;border-radius:12px;padding:12px">
       <label style="font-size:11px;color:#777">Nº de orden<br><input value="${m.numOrden}" oninput="ocActual.meta.numOrden=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:110px"></label>
       <label style="font-size:11px;color:#777">Fecha<br><input value="${m.fecha}" oninput="ocActual.meta.fecha=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:110px"></label>
-      <label style="font-size:11px;color:#777">Facturar a<br><input value="${m.facturarA}" oninput="ocActual.meta.facturarA=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:180px"></label>
-      <label style="font-size:11px;color:#777">Obra<br><input value="${m.obra}" oninput="ocActual.meta.obra=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:160px"></label>
+      <label style="font-size:11px;color:#777">Facturar a (tu razón social)<br><input value="${m.facturarA}" placeholder="Tecnoelementos…" oninput="ocActual.meta.facturarA=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:200px"></label>
+      <label style="font-size:11px;color:#777">Obra / ref. (opcional)<br><input value="${m.obra}" placeholder="sin cliente" oninput="ocActual.meta.obra=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:160px"></label>
       <label style="font-size:11px;color:#777">Comprador<br><input value="${m.comprador}" oninput="ocActual.meta.comprador=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:150px"></label>
       <label style="font-size:11px;color:#777">Tipo de cambio<br><input id="oc-tc" value="${m.tc}" oninput="ocActual.meta.tc=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:110px"></label>
       <div style="flex-basis:100%;font-size:11px;color:#999" id="oc-tc-info">Cargando TC…</div>
@@ -3512,8 +3515,8 @@ function _ocBuildExcel(oc, meta, cot) {
   ws['K'+fMn]=c('TOTAL      MN'); ws['N'+fMn]=c(Math.round(oc.totalUSD*tc*100)/100,'n');
   ws['!ref']='A1:W'+(fMn+2);
   XLSX.utils.book_append_sheet(wb, ws, 'OC USD');
-  const safe = String(cot.cliente||'cliente').replace(/[^\w\-]+/g,'-');
-  XLSX.writeFile(wb, 'OC-'+(meta.numOrden||'BORRADOR')+'_'+oc.proveedor+'_'+safe+'.xlsx');
+  const ref = String(meta.folio||'OC').replace(/[^\w\-]+/g,'-');
+  XLSX.writeFile(wb, 'OC-'+(meta.numOrden||'BORRADOR')+'_'+oc.proveedor+'_'+ref+'.xlsx');
 }
 </script>
 
