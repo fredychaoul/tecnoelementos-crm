@@ -3311,7 +3311,7 @@ const OC_DESCUENTOS = {
 // dividiendo: lista = costo ÷ descuentos. Esta tabla es solo para OVERRIDES
 // puntuales (si una lista real difiere del costo del catálogo).
 const OC_LISTA = {
-  // ej. BODEN_TRIBECA: { precio: 98.20, por: 'caja' }  // descomenta para forzar
+  BODEN_TRIBECA: { precio: 98.20, por: 'caja' }   // lista real del proveedor (el costo del catálogo daba 108.02, alto)
 };
 
 function ocDescuentos(cat) { return OC_DESCUENTOS[ocLineaKey(cat)] || null; }
