@@ -3335,33 +3335,34 @@ function ocRenglon(prodCot) {
 }
 
 // Agrupa una cotización en una OC por proveedor (+ lista de pendientes omitidos).
+// Una sola OC por cotización: Pisos Creativos surte las 3 marcas, así que todos
+// los renglones (CAPPA/BODEN/OneDecking) van juntos; cada uno conserva su desc.
 function ocDesdeCotizacion(cot) {
-  const grupos = {};
+  const renglones = [];
   const pendientes = [];
   (cot.productos || []).forEach(p => {
     const r = ocRenglon(p);
-    if (r.ok) (grupos[r.proveedor] = grupos[r.proveedor] || []).push(r);
-    else pendientes.push(r);
+    if (r.ok) renglones.push(r); else pendientes.push(r);
   });
-  const ocs = OC_PROVEEDORES_OC.filter(pr => grupos[pr]).map(pr => {
-    const renglones = grupos[pr];
-    const subtotal = Math.round(renglones.reduce((s, r) => s + r.subtotal, 0) * 100) / 100;
-    const iva = Math.round(subtotal * OC_IVA * 100) / 100;
-    const totalUSD = Math.round((subtotal + iva) * 100) / 100;
-    return { proveedor: pr, renglones, subtotal, iva, totalUSD };
-  });
+  if (!renglones.length) return { ocs: [], pendientes };
+  const subtotal = Math.round(renglones.reduce((s, r) => s + r.subtotal, 0) * 100) / 100;
+  const iva = Math.round(subtotal * OC_IVA * 100) / 100;
+  const totalUSD = Math.round((subtotal + iva) * 100) / 100;
+  const ocs = [{ proveedor: 'Pisos Creativos', para: OC_PARA_DEFAULT, renglones, subtotal, iva, totalUSD }];
   return { ocs, pendientes };
 }
 
 // ── UI: modal de previsualización + descarga del OC ────────────────────────
+// Todo lo surte Pisos Creativos por el momento (proveedor único de las 3 marcas).
+const OC_PARA_DEFAULT = 'Pisos Creativos, S. de R.L. de C.V.';
 const OC_PROVEEDOR_INFO = {
-  BODEN:      { para: 'Pisos Creativos, S. de R.L. de C.V.' },
-  CAPPA:      { para: '' },        // razón social por capturar
-  ONEDECKING: { para: '' }         // razón social por capturar
+  BODEN:      { para: OC_PARA_DEFAULT },
+  CAPPA:      { para: OC_PARA_DEFAULT },
+  ONEDECKING: { para: OC_PARA_DEFAULT }
 };
 // "Facturar a" = entidad de Tecnoelementos a la que el proveedor factura.
 // NUNCA el cliente final (el OC va al proveedor, no se comparte el cliente).
-const OC_FACTURAR_A = '';          // razón social de Tecnoelementos por capturar
+const OC_FACTURAR_A = 'EMERALD KITCHENS';
 let ocActual = null;
 
 function ocFechaHoy() {
@@ -3491,7 +3492,7 @@ function _ocBuildExcel(oc, meta, cot) {
   ws['A4']=c('Número de Orden'); ws['B4']=c(meta.numOrden||'—');
   ws['E4']=c('Número de Cliente'); ws['J4']=c('Fecha'); ws['M4']=c(meta.fecha);
   ws['A6']=c('Para:'); ws['C6']=c('Facturar a:'); ws['I6']=c('Obra denominada:'); ws['N6']=c('PTO. No.');
-  ws['A7']=c((OC_PROVEEDOR_INFO[oc.proveedor]||{}).para || oc.proveedor); ws['C7']=c(meta.facturarA||''); ws['I7']=c(meta.obra||''); ws['N7']=c(meta.folio||'');
+  ws['A7']=c(oc.para || (OC_PROVEEDOR_INFO[oc.proveedor]||{}).para || oc.proveedor); ws['C7']=c(meta.facturarA||''); ws['I7']=c(meta.obra||''); ws['N7']=c(meta.folio||'');
   ws['A9']=c('Contacto ó Vendedor'); ws['I9']=c('Dirección completa de Entrega :'); ws['A10']=c(meta.comprador||'');
   ws['A11']=c('Fecha de Envío');
   ws['A13']=c('Fletera'); ws['C13']=c('Mercancía Asegurada'); ws['G13']=c('USO DE CFDI'); ws['J13']=c('METODO DE PAGO (PIP, PPD, PUE, POR DEFINIR)'); ws['N13']=c('FORMA DE PAGO');
