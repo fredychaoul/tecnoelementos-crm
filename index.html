@@ -3306,12 +3306,12 @@ const OC_DESCUENTOS = {
   ONEDECKING:[0.40,0.10,0.08]
 };
 
-// Precio de LISTA USD por línea (el que va al OC, antes de descuentos).
-// por:'caja' para piso, 'pieza' para accesorios, 'm2' si la lista es por m².
-// Donde no haya dato, se deriva del costo del catálogo (marcado como 'derivado').
+// Precio de LISTA USD por línea. El catálogo guarda costo = lista × descuentos
+// (ver comentario "BASE DE DATOS DE PRECIOS"), así que la lista se reconstruye
+// dividiendo: lista = costo ÷ descuentos. Esta tabla es solo para OVERRIDES
+// puntuales (si una lista real difiere del costo del catálogo).
 const OC_LISTA = {
-  BODEN_TRIBECA: { precio: 98.20, por: 'caja' }
-  // BODEN_HBONE, BODEN_WALLCORE, CAPPA_*, ONEDECKING… por capturar
+  // ej. BODEN_TRIBECA: { precio: 98.20, por: 'caja' }  // descomenta para forzar
 };
 
 function ocDescuentos(cat) { return OC_DESCUENTOS[ocLineaKey(cat)] || null; }
@@ -3466,7 +3466,7 @@ function ocRenderModal() {
       <td style="padding:5px 6px">${r.unidad==='CAJAS'?'cajas':'pza'}</td>
       <td style="padding:5px 6px;font-family:monospace;font-size:11px">${r.clave}</td>
       <td style="padding:5px 6px">${r.linea}${r.color?(' · '+r.color):''}</td>
-      <td style="text-align:right;padding:5px 6px">${ocMoney(r.precioUnitario)}${r.fuente==='derivado'?'<span style="color:#c90" title="Precio estimado del costo; falta la lista real">*</span>':''}</td>
+      <td style="text-align:right;padding:5px 6px">${ocMoney(r.precioUnitario)}</td>
       <td style="text-align:center;padding:5px 6px;color:#888">${r.descuentos.map(d=>Math.round(d*100)+'%').join('/')}</td>
       <td style="text-align:right;padding:5px 6px;font-weight:600">${ocMoney(r.subtotal)}</td></tr>`).join('');
     return `<div style="border:1px solid #e8e8e8;border-radius:12px;padding:14px;margin-top:14px">
@@ -3488,8 +3488,7 @@ function ocRenderModal() {
   }).join('');
   const pend = ocActual.pendientes.length ? `<div style="background:#FBF3DD;border:1px solid #E8C96B;border-radius:10px;padding:10px 12px;margin-top:14px;font-size:12px;color:#7a5a00">
     ⚠️ <strong>${ocActual.pendientes.length} producto(s) omitido(s)</strong> (sin catálogo o sin costo): ${ocActual.pendientes.map(p=>(p.nombre||p.clave||'?')).join(', ')}. Si aplican, captúralos a mano en el Excel.</div>` : '';
-  const hayDerivado = ocActual.ocs.some(o => o.renglones.some(r => r.fuente === 'derivado'));
-  const notaDeriv = hayDerivado ? `<div style="margin-top:10px;font-size:11px;color:#c90">* Precio estimado del costo del catálogo (falta cargar la lista real del proveedor para esa línea).</div>` : '';
+  const notaDeriv = '';
 
   host.innerHTML = `<div style="background:#fff;border-radius:16px;max-width:880px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
