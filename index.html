@@ -662,7 +662,7 @@
       <button class="btn btn-outline btn-sm" onclick="cerrarModal()">Cerrar</button>
       <button class="btn btn-sm" id="btn-editar-cot" style="background:#E8C96B;color:#1A1A1A;border:none;font-weight:700" onclick="editarCotizacion()">✏️ Editar</button>
       <button class="btn btn-dark btn-sm" onclick="regenerarPDF()">📄 Regenerar PDF</button>
-      <button class="btn btn-sm" onclick="generarOC(modalCotizacion)" style="background:#E8943A;color:#fff;border:none;">📦 Generar OC</button>
+      <button class="btn btn-sm" onclick="ocGenerar(modalCotizacion)" style="background:#E8943A;color:#fff;border:none;">📦 Generar OC</button>
     </div>
   </div>
 </div>
@@ -3235,6 +3235,286 @@ window.addEventListener('unhandledrejection', function(e) {
   if (div) { div.style.display='block'; div.textContent = '❌ Error async: ' + msg; }
 });
 init();
+</script>
+
+<!-- ═══════════════════ MÓDULO: ÓRDENES DE COMPRA A PROVEEDOR ═══════════════════ -->
+<script>
+// Genera órdenes de compra (CAPPA / BODEN / ONEDECKING) desde una cotización.
+// Cruza cada producto cotizado con el catálogo PRODUCTOS por `clave` para obtener
+// línea (proveedor) y costo (neto). El precio de lista se reconstruye dividiendo
+// el neto entre los descuentos en cascada fijos por línea. Unidades: piso => CAJAS
+// (m² ÷ rendimiento, redondeo a caja completa; herringbone en pares); molduras/
+// insumos/vigas/accesorios => PIEZA. Productos sin catálogo o sin costo se OMITEN
+// y se listan como pendientes.
+const OC_IVA = 0.16;
+const OC_PROVEEDORES_OC = ['CAPPA', 'BODEN', 'ONEDECKING']; // WOW queda fuera
+
+const OC_CAT_INDEX = (function () {
+  const m = {};
+  (typeof PRODUCTOS !== 'undefined' ? PRODUCTOS : []).forEach(p => {
+    if (p && p.clave) m[String(p.clave).toUpperCase()] = p;
+  });
+  return m;
+})();
+function ocCat(clave) { return OC_CAT_INDEX[String(clave || '').toUpperCase()] || null; }
+
+function ocProveedor(linea) {
+  const L = String(linea || '').toUpperCase();
+  if (L.startsWith('CAPPA')) return 'CAPPA';
+  if (L.startsWith('BODEN')) return 'BODEN';
+  if (L.startsWith('ONEDECKING')) return 'ONEDECKING';
+  if (L.startsWith('WOW')) return 'WOW';
+  return null;
+}
+
+// Descuentos en cascada (fracciones) según el producto del catálogo.
+function ocDescuentos(cat) {
+  if (!cat) return null;
+  const L = String(cat.linea || '').toUpperCase();
+  const m = String(cat.modelo || '').toUpperCase();
+  const f = String(cat.formato || '').toUpperCase();
+  const prov = ocProveedor(L);
+  if (prov === 'ONEDECKING') return [0.40, 0.10, 0.08];
+  if (prov === 'BODEN') {
+    if (L === 'BODEN MOLDURA') return [0.40, 0.10, 0.08];
+    if (L === 'BODEN SPLASH')  return [0.40, 0.10];
+    return [0.40, 0.10, 0.12]; // TRIBECA / HBONE / WALLCORE
+  }
+  if (prov === 'CAPPA') {
+    if (L === 'CAPPA MOLDURA') return [0.40, 0.10];
+    if (L === 'CAPPA INSUMO')  return m.includes('BOSTIK') ? [0.40] : [0.40, 0.10];
+    if (m.includes('ALPES')) {
+      const es24 = f.includes('24') || f.includes('2.20') || m.includes('240');
+      return es24 ? [0.40, 0.10, 0.15] : [0.40, 0.10, 0.13];
+    }
+    return [0.40, 0.10, 0.10]; // LIGNUM / TERRA / WALNUTS / HERRINGBONE
+  }
+  return null; // WOW u otro proveedor => fuera del OC
+}
+function ocFactor(ds) { return (ds || []).reduce((a, d) => a * (1 - d), 1); }
+
+// Convierte una partida cotizada en renglón de OC. ok:false con motivo si se omite.
+function ocRenglon(prodCot) {
+  const cat = ocCat(prodCot.clave);
+  if (!cat) return { ok: false, motivo: 'no-catalogo', nombre: prodCot.nombre, clave: prodCot.clave, cantidad: prodCot.cantidad, unidad: prodCot.unidad };
+  const prov = ocProveedor(cat.linea);
+  if (!prov || prov === 'WOW') return { ok: false, motivo: 'fuera-de-oc', nombre: prodCot.nombre, clave: prodCot.clave, proveedorReal: cat.linea };
+  const ds = ocDescuentos(cat);
+  if (!ds) return { ok: false, motivo: 'sin-descuento', nombre: prodCot.nombre, clave: prodCot.clave };
+  const costo = parseFloat(cat.costo) || 0;
+  const esM2 = String(cat.unidad || prodCot.unidad || '').toUpperCase().replace('²', '2') === 'M2';
+  const caja = parseFloat(prodCot.caja || cat.caja) || 0;
+  const par = !!(prodCot.cajaPar || cat.cajaPar);
+  let unidad, cantidad, netoUnit;
+  if (esM2 && caja > 0) {
+    unidad = 'CAJAS';
+    let cajas = Math.ceil((parseFloat(prodCot.cantidad) || 0) / caja - 0.02);
+    if (cajas < 1) cajas = 1;
+    if (par && cajas % 2 !== 0) cajas += 1;
+    cantidad = cajas;
+    netoUnit = costo * caja; // neto por caja
+  } else {
+    unidad = 'PIEZA';
+    cantidad = Math.round(parseFloat(prodCot.cantidad) || 0);
+    netoUnit = costo; // neto por pieza
+  }
+  if (!(netoUnit > 0)) return { ok: false, motivo: 'sin-costo', nombre: prodCot.nombre, clave: prodCot.clave, cantidad, unidad };
+  const factor = ocFactor(ds);
+  const precioUnitario = factor > 0 ? netoUnit / factor : netoUnit;
+  const subtotal = cantidad * precioUnitario * factor; // == cantidad * netoUnit
+  const partes = String(cat.modelo || prodCot.nombre || '').split('—');
+  const linea = (partes[0] || '').trim();
+  const color = (partes[1] || '').trim();
+  return {
+    ok: true, proveedor: prov, clave: cat.clave, descripcion: cat.modelo || prodCot.nombre,
+    linea, color, unidad, cantidad,
+    precioUnitario: Math.round(precioUnitario * 10000) / 10000,
+    descuentos: ds,
+    subtotal: Math.round(subtotal * 100) / 100
+  };
+}
+
+// Agrupa una cotización en una OC por proveedor (+ lista de pendientes omitidos).
+function ocDesdeCotizacion(cot) {
+  const grupos = {};
+  const pendientes = [];
+  (cot.productos || []).forEach(p => {
+    const r = ocRenglon(p);
+    if (r.ok) (grupos[r.proveedor] = grupos[r.proveedor] || []).push(r);
+    else pendientes.push(r);
+  });
+  const ocs = OC_PROVEEDORES_OC.filter(pr => grupos[pr]).map(pr => {
+    const renglones = grupos[pr];
+    const subtotal = Math.round(renglones.reduce((s, r) => s + r.subtotal, 0) * 100) / 100;
+    const iva = Math.round(subtotal * OC_IVA * 100) / 100;
+    const totalUSD = Math.round((subtotal + iva) * 100) / 100;
+    return { proveedor: pr, renglones, subtotal, iva, totalUSD };
+  });
+  return { ocs, pendientes };
+}
+
+// ── UI: modal de previsualización + descarga del OC ────────────────────────
+const OC_PROVEEDOR_INFO = {
+  BODEN:      { para: 'Pisos Creativos, S. de R.L. de C.V.' },
+  CAPPA:      { para: '' },        // razón social por capturar
+  ONEDECKING: { para: '' }         // razón social por capturar
+};
+let ocActual = null;
+
+function ocFechaHoy() {
+  const d = new Date();
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+function ocMoney(n) { return '$' + (Math.round((+n||0)*100)/100).toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function ocGenerar(cotData) {
+  const cot = cotData || modalCotizacion;
+  if (!cot || !Array.isArray(cot.productos)) { alert('No hay datos de cotización.'); return; }
+  const r = ocDesdeCotizacion(cot);
+  if (!r.ocs.length) {
+    alert('Esta cotización no tiene productos CAPPA / BODEN / OneDecking (en el catálogo) para generar OC.' +
+          (r.pendientes.length ? ('\n\n' + r.pendientes.length + ' producto(s) sin catálogo o sin costo.') : ''));
+    return;
+  }
+  ocActual = { cot, ocs: r.ocs, pendientes: r.pendientes, meta: {
+    numOrden:'', fecha:ocFechaHoy(), facturarA:cot.cliente||'',
+    obra:cot.proyecto||cot.ciudad||'', folio:'TEC-'+String(cot.folio).padStart(4,'0'),
+    comprador:'', tc:''
+  }};
+  ocRenderModal();
+  document.getElementById('oc-modal').style.display = 'flex';
+  ocCargarTC();
+}
+function ocCerrarModal() { const h=document.getElementById('oc-modal'); if(h) h.style.display='none'; }
+
+function ocRenderModal() {
+  let host = document.getElementById('oc-modal');
+  if (!host) {
+    host = document.createElement('div'); host.id = 'oc-modal';
+    host.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;z-index:99999;overflow:auto;padding:24px';
+    host.addEventListener('click', e => { if (e.target === host) ocCerrarModal(); });
+    document.body.appendChild(host);
+  }
+  const m = ocActual.meta;
+  const secciones = ocActual.ocs.map(oc => {
+    const filas = oc.renglones.map(r => `<tr style="border-top:1px solid #f0f0f0">
+      <td style="text-align:right;padding:5px 6px">${r.cantidad}</td>
+      <td style="padding:5px 6px">${r.unidad==='CAJAS'?'cajas':'pza'}</td>
+      <td style="padding:5px 6px;font-family:monospace;font-size:11px">${r.clave}</td>
+      <td style="padding:5px 6px">${r.linea}${r.color?(' · '+r.color):''}</td>
+      <td style="text-align:right;padding:5px 6px">${ocMoney(r.precioUnitario)}</td>
+      <td style="text-align:center;padding:5px 6px;color:#888">${r.descuentos.map(d=>Math.round(d*100)+'%').join('/')}</td>
+      <td style="text-align:right;padding:5px 6px;font-weight:600">${ocMoney(r.subtotal)}</td></tr>`).join('');
+    return `<div style="border:1px solid #e8e8e8;border-radius:12px;padding:14px;margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <strong style="font-size:15px">📦 ${oc.proveedor}</strong>
+        <div style="display:flex;gap:6px">
+          <button onclick="ocCopiar('${oc.proveedor}')" style="background:none;border:1px solid #ddd;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer">Copiar</button>
+          <button onclick="ocDescargarExcel('${oc.proveedor}')" style="background:#1E6B3C;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer">⬇ Excel</button>
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="color:#999;text-align:left;font-size:11px">
+          <th style="text-align:right;padding:4px 6px">Cant</th><th style="padding:4px 6px">Unidad</th><th style="padding:4px 6px">Clave</th><th style="padding:4px 6px">Línea / Color</th><th style="text-align:right;padding:4px 6px">P. Lista</th><th style="text-align:center;padding:4px 6px">Desc.</th><th style="text-align:right;padding:4px 6px">Subtotal</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+      <div style="text-align:right;margin-top:8px;font-size:12px;color:#555">
+        Subtotal ${ocMoney(oc.subtotal)} · IVA 16% ${ocMoney(oc.iva)} · <strong style="color:#1A1A1A">Total USD ${ocMoney(oc.totalUSD)}</strong></div>
+    </div>`;
+  }).join('');
+  const pend = ocActual.pendientes.length ? `<div style="background:#FBF3DD;border:1px solid #E8C96B;border-radius:10px;padding:10px 12px;margin-top:14px;font-size:12px;color:#7a5a00">
+    ⚠️ <strong>${ocActual.pendientes.length} producto(s) omitido(s)</strong> (sin catálogo o sin costo): ${ocActual.pendientes.map(p=>(p.nombre||p.clave||'?')).join(', ')}. Si aplican, captúralos a mano en el Excel.</div>` : '';
+
+  host.innerHTML = `<div style="background:#fff;border-radius:16px;max-width:880px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+      <div><div style="font-weight:800;font-size:18px">Orden de compra a proveedor</div>
+        <div style="font-size:12px;color:#888">${m.folio} · ${ocActual.cot.cliente||''}</div></div>
+      <button onclick="ocCerrarModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa">&times;</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;background:#FAFAFA;border:1px solid #eee;border-radius:12px;padding:12px">
+      <label style="font-size:11px;color:#777">Nº de orden<br><input value="${m.numOrden}" oninput="ocActual.meta.numOrden=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:110px"></label>
+      <label style="font-size:11px;color:#777">Fecha<br><input value="${m.fecha}" oninput="ocActual.meta.fecha=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:110px"></label>
+      <label style="font-size:11px;color:#777">Facturar a<br><input value="${m.facturarA}" oninput="ocActual.meta.facturarA=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:180px"></label>
+      <label style="font-size:11px;color:#777">Obra<br><input value="${m.obra}" oninput="ocActual.meta.obra=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:160px"></label>
+      <label style="font-size:11px;color:#777">Comprador<br><input value="${m.comprador}" oninput="ocActual.meta.comprador=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:150px"></label>
+      <label style="font-size:11px;color:#777">Tipo de cambio<br><input id="oc-tc" value="${m.tc}" oninput="ocActual.meta.tc=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:110px"></label>
+      <div style="flex-basis:100%;font-size:11px;color:#999" id="oc-tc-info">Cargando TC…</div>
+    </div>
+    ${secciones}
+    ${pend}
+    <div style="text-align:right;margin-top:16px"><button onclick="ocCerrarModal()" style="background:none;border:1px solid #ddd;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer">Cerrar</button></div>
+  </div>`;
+}
+
+async function ocCargarTC() {
+  const info = document.getElementById('oc-tc-info');
+  try {
+    const r = await fetch('/api/tipo-cambio');
+    const d = await r.json();
+    if (d && d.ok && d.tc) {
+      ocActual.meta.tc = d.tc;
+      const inp = document.getElementById('oc-tc'); if (inp) inp.value = d.tc;
+      if (info) info.textContent = 'Banxico FIX $' + d.fix + ' + $0.15 = $' + d.tc + (d.fecha ? (' · ' + d.fecha) : '');
+    } else if (info) {
+      info.textContent = (d && d.error === 'no_token') ? 'Captura el TC (falta el token de Banxico en Vercel).' : 'Captura el TC manualmente.';
+    }
+  } catch (e) { if (info) info.textContent = 'Captura el TC manualmente.'; }
+}
+
+function ocCopiar(prov) {
+  const oc = ocActual.ocs.find(o => o.proveedor === prov); if (!oc) return;
+  const head = ['CANTIDAD','UNIDAD','CLAVE','LÍNEA','COLOR','PRECIO UNITARIO','D1','D2','D3','SUBTOTAL'];
+  const rows = oc.renglones.map(r => [r.cantidad, r.unidad, r.clave, r.linea, r.color, r.precioUnitario,
+    r.descuentos[0]||'', r.descuentos[1]||'', r.descuentos[2]||'', r.subtotal]);
+  const tsv = [head, ...rows].map(a => a.join('\t')).join('\n');
+  navigator.clipboard.writeText(tsv).then(() => {
+    if (typeof mostrarToast === 'function') mostrarToast('OC ' + prov + ' copiada al portapapeles', 'success');
+  }).catch(() => alert('No se pudo copiar'));
+}
+
+function ocEnsureXLSX(cb) {
+  if (window.XLSX) { cb(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  s.onload = cb; document.head.appendChild(s);
+}
+function ocDescargarExcel(prov) {
+  const oc = ocActual.ocs.find(o => o.proveedor === prov); if (!oc) return;
+  ocEnsureXLSX(() => _ocBuildExcel(oc, ocActual.meta, ocActual.cot));
+}
+function _ocBuildExcel(oc, meta, cot) {
+  const wb = XLSX.utils.book_new(); const ws = {};
+  const c = (v, t) => ({ v: v, t: t === 'n' ? 'n' : 's' });
+  ws['A4']=c('Número de Orden'); ws['B4']=c(meta.numOrden||'—');
+  ws['E4']=c('Número de Cliente'); ws['J4']=c('Fecha'); ws['M4']=c(meta.fecha);
+  ws['A6']=c('Para:'); ws['C6']=c('Facturar a:'); ws['I6']=c('Obra denominada:'); ws['N6']=c('PTO. No.');
+  ws['A7']=c((OC_PROVEEDOR_INFO[oc.proveedor]||{}).para || oc.proveedor); ws['C7']=c(meta.facturarA||''); ws['I7']=c(meta.obra||''); ws['N7']=c(meta.folio||'');
+  ws['A9']=c('Contacto ó Vendedor'); ws['I9']=c('Dirección completa de Entrega :'); ws['A10']=c(meta.comprador||'');
+  ws['A11']=c('Fecha de Envío');
+  ws['A13']=c('Fletera'); ws['C13']=c('Mercancía Asegurada'); ws['G13']=c('USO DE CFDI'); ws['J13']=c('METODO DE PAGO (PIP, PPD, PUE, POR DEFINIR)'); ws['N13']=c('FORMA DE PAGO');
+  ws['G14']=c('ADQUISICION DE MERCANCIA'); ws['J14']=c('PUE'); ws['N14']=c('TRANSFERENCIA');
+  ws['A15']=c('CANTIDAD'); ws['B15']=c('UNIDAD'); ws['C15']=c('DESCRIPCIÓN DE PRODUCTO'); ws['H15']=c('PRECIO UNITARIO'); ws['J15']=c('DESCUENTO'); ws['N15']=c('Sub Total');
+  ws['C16']=c('CLAVE'); ws['E16']=c('LÍNEA'); ws['F16']=c('COLOR'); ws['J16']=c(1,'n'); ws['K16']=c(2,'n'); ws['L16']=c(3,'n'); ws['M16']=c(4,'n');
+  let fila = 17;
+  oc.renglones.forEach(r => {
+    ws['A'+fila]=c(r.cantidad,'n'); ws['B'+fila]=c(r.unidad); ws['C'+fila]=c(r.clave); ws['E'+fila]=c(r.linea); ws['F'+fila]=c(r.color);
+    ws['H'+fila]=c(r.precioUnitario,'n');
+    ['J','K','L','M'].forEach((col,i)=>{ if (r.descuentos[i] != null) ws[col+fila]=c(r.descuentos[i],'n'); });
+    ws['N'+fila]=c(r.subtotal,'n'); fila++;
+  });
+  const fSub=fila+1, fIva=fSub+2, fTot=fIva+2, fTc=fTot+2, fMn=fTc+1;
+  const tc = parseFloat(meta.tc) || 0;
+  ws['A'+fila]=c('Nombre del Comprador');
+  ws['K'+fSub]=c('Sub Total'); ws['N'+fSub]=c(oc.subtotal,'n');
+  ws['K'+fIva]=c(0.16,'n'); ws['N'+fIva]=c(oc.iva,'n');
+  ws['K'+fTot]=c('TOTAL'); ws['N'+fTot]=c(oc.totalUSD,'n');
+  ws['K'+fTc]=c('TIPO DE CAMBIO'); ws['N'+fTc]=c(tc,'n');
+  ws['K'+fMn]=c('TOTAL      MN'); ws['N'+fMn]=c(Math.round(oc.totalUSD*tc*100)/100,'n');
+  ws['!ref']='A1:W'+(fMn+2);
+  XLSX.utils.book_append_sheet(wb, ws, 'OC USD');
+  const safe = String(cot.cliente||'cliente').replace(/[^\w\-]+/g,'-');
+  XLSX.writeFile(wb, 'OC-'+(meta.numOrden||'BORRADOR')+'_'+oc.proveedor+'_'+safe+'.xlsx');
+}
 </script>
 
 <!-- ═══════════════════ MÓDULO: SEGUIMIENTO DE OBRA ═══════════════════ -->
