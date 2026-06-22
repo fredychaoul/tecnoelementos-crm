@@ -3544,10 +3544,75 @@ function ocEnsureXLSX(cb) {
   s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
   s.onload = cb; document.head.appendChild(s);
 }
+function ocEnsureExcelJS(cb, onfail) {
+  if (window.ExcelJS) { cb(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+  s.onload = cb; s.onerror = onfail || function(){};
+  document.head.appendChild(s);
+}
 async function ocDescargarExcel(prov) {
   const oc = ocActual.ocs.find(o => o.proveedor === prov); if (!oc) return;
-  ocEnsureXLSX(() => _ocBuildExcel(oc, ocActual.meta, ocActual.cot));
+  // Versión limpia (SheetJS) como respaldo si falla la plantilla.
+  const fallback = () => ocEnsureXLSX(() => _ocBuildExcel(oc, ocActual.meta, ocActual.cot));
+  ocEnsureExcelJS(async () => {
+    try { await _ocBuildExcelPlantilla(oc, ocActual.meta); }
+    catch (e) { console.error('OC: falló la plantilla, uso versión limpia:', e); fallback(); }
+  }, fallback);
   await ocRegistrarOC();
+}
+
+// Llena la plantilla real ORDEN_DE_VENTA_CLIENTES.xlsx (conserva formato).
+async function _ocBuildExcelPlantilla(oc, meta) {
+  const resp = await fetch('/oc_plantilla.xlsx');
+  if (!resp.ok) throw new Error('plantilla no disponible (' + resp.status + ')');
+  const buf = await resp.arrayBuffer();
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf);
+  const ws = wb.worksheets[0];
+  const put = (addr, val) => { ws.getCell(addr).value = val; };
+  // Encabezado (solo sobrescribo lo que tengo; lo demás queda como la plantilla)
+  put('B4', meta.numOrden || '—');
+  put('M4', meta.fecha);
+  put('A7', oc.para || 'Pisos Creativos, S. de R.L. de C.V.');
+  put('C7', meta.facturarA || '');
+  if (meta.obra) put('I7', meta.obra);
+  put('N7', meta.folio || '');
+  if (meta.comprador) put('A10', meta.comprador);
+  // Filas de producto: la plantilla trae 5 (17-21). Ajusto a N renglones.
+  const BASE = 17, ORIG = 5, N = oc.renglones.length, shift = N - ORIG;
+  if (N > ORIG) ws.duplicateRow(21, N - ORIG, true);
+  else if (N < ORIG) ws.spliceRows(BASE + N, ORIG - N);
+  oc.renglones.forEach((r, i) => {
+    const row = BASE + i;
+    put('A'+row, r.cantidad);
+    put('B'+row, r.unidad === 'CAJAS' ? 'CAJAS' : 'PIEZA');
+    put('C'+row, r.clave);
+    put('E'+row, r.linea);
+    put('F'+row, r.color || '');
+    put('H'+row, r.precioUnitario);
+    put('J'+row, r.descuentos[0] != null ? r.descuentos[0] : null);
+    put('K'+row, r.descuentos[1] != null ? r.descuentos[1] : null);
+    put('L'+row, r.descuentos[2] != null ? r.descuentos[2] : null);
+    put('M'+row, r.descuentos[3] != null ? r.descuentos[3] : null);
+    put('N'+row, r.subtotal);
+  });
+  // Totales (se recorren por shift al cambiar el número de filas)
+  const tc = parseFloat(meta.tc) || 0;
+  put('N'+(22+shift), oc.subtotal);
+  put('N'+(24+shift), oc.iva);
+  put('N'+(26+shift), oc.totalUSD);
+  put('N'+(28+shift), tc);
+  put('N'+(29+shift), Math.round(oc.totalUSD * tc * 100) / 100);
+  // Descargar
+  const outBuf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([outBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'OC-' + (meta.numOrden || 'BORRADOR') + '_' + String(meta.folio || 'OC').replace(/[^\w\-]+/g, '-') + '.xlsx';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 function _ocBuildExcel(oc, meta, cot) {
   const wb = XLSX.utils.book_new(); const ws = {};
