@@ -3311,7 +3311,15 @@ const OC_DESCUENTOS = {
 // dividiendo: lista = costo ÷ descuentos. Esta tabla es solo para OVERRIDES
 // puntuales (si una lista real difiere del costo del catálogo).
 const OC_LISTA = {
-  BODEN_TRIBECA: { precio: 98.20, por: 'caja' }   // lista real del proveedor (el costo del catálogo daba 108.02, alto)
+  // BODEN pisos — precio de lista POR CAJA (Lista No.08, sin IVA)
+  BODEN_TRIBECA:  { precio: 98.20, por: 'caja' },
+  BODEN_HBONE:    { precio: 66.45, por: 'caja' },
+  BODEN_WALLCORE: { precio: 83.69, por: 'caja' },
+  // BODEN molduras — la lista por pieza ya vive en el catálogo (campo pvp)
+  BODEN_MOLDURA:  { campo: 'pvp',  por: 'pieza' },
+  // BODEN splash — la lista por pieza vive en el catálogo (campo costo)
+  BODEN_SPLASH:   { campo: 'costo', por: 'pieza' }
+  // CAPPA y OneDecking se derivan del costo del catálogo (validado contra la lista CAPPA No.79).
 };
 
 function ocDescuentos(cat) { return OC_DESCUENTOS[ocLineaKey(cat)] || null; }
@@ -3341,12 +3349,14 @@ function ocRenglon(prodCot) {
     cantidad = Math.round(parseFloat(prodCot.cantidad) || 0);
   }
   const factor = ocFactor(ds);
-  // Precio unitario de LISTA: tabla OC_LISTA si existe; si no, se deriva del costo.
+  // Precio unitario de LISTA: OC_LISTA si existe (precio fijo o campo del catálogo);
+  // si no, se deriva del costo (costo = lista × descuentos => lista = costo ÷ desc).
   let precioUnitario, fuente;
   const lista = OC_LISTA[key];
-  if (lista && lista.precio > 0) {
+  const listaBase = lista ? (lista.campo ? (parseFloat(cat[lista.campo]) || 0) : (parseFloat(lista.precio) || 0)) : 0;
+  if (lista && listaBase > 0) {
     fuente = 'lista';
-    precioUnitario = (lista.por === 'm2') ? lista.precio * (caja || 1) : lista.precio; // por caja / pieza
+    precioUnitario = (lista.por === 'm2') ? listaBase * (caja || 1) : listaBase; // por caja / pieza
   } else {
     const costo = parseFloat(cat.costo) || 0;
     const netoUnit = (unidad === 'CAJAS') ? costo * caja : costo;
