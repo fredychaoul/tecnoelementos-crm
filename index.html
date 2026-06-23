@@ -3624,6 +3624,7 @@ async function _ocBuildExcelPlantilla(oc, meta) {
   const buf = await resp.arrayBuffer();
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buf);
+  wb.calcProperties = { fullCalcOnLoad: true };   // Excel recalcula las fórmulas al abrir
   const ws = wb.worksheets[0];
   const put = (addr, val) => { ws.getCell(addr).value = val; };
   // Encabezado (solo sobrescribo lo que tengo; lo demás queda como la plantilla)
@@ -3651,19 +3652,24 @@ async function _ocBuildExcelPlantilla(oc, meta) {
     put('K'+row, r.descuentos[1] != null ? r.descuentos[1] : null);
     put('L'+row, r.descuentos[2] != null ? r.descuentos[2] : null);
     put('M'+row, r.descuentos[3] != null ? r.descuentos[3] : null);
-    put('N'+row, r.subtotal);
+    // Subtotal del renglón = FÓRMULA (igual que la plantilla): cant × precio × descuentos
+    ws.getCell('N'+row).value = { formula: 'A'+row+'*H'+row+'*(1-J'+row+')*(1-K'+row+')*(1-L'+row+')*(1-M'+row+')', result: r.subtotal };
   });
-  // Limpiar filas de producto sobrantes (5 - N) para que queden en blanco
+  // Filas sobrantes: limpiar solo los campos de ENTRADA; la fórmula de N se deja
+  // (da 0, igual que la plantilla original).
   for (let row = BASE + N; row <= BASE + ORIG - 1 && N < ORIG; row++) {
-    ['A','B','C','E','F','H','J','K','L','M','N'].forEach(c => { ws.getCell(c + row).value = null; });
+    ['A','B','C','E','F','H','J','K','L','M'].forEach(c => { ws.getCell(c + row).value = null; });
   }
-  // Totales (se recorren por shift al cambiar el número de filas)
+  // Totales = FÓRMULAS idénticas a la plantilla (el único campo de entrada es el TC).
   const tc = parseFloat(meta.tc) || 0;
-  put('N'+(22+shift), oc.subtotal);
-  put('N'+(24+shift), oc.iva);
-  put('N'+(26+shift), oc.totalUSD);
-  put('N'+(28+shift), tc);
-  put('N'+(29+shift), Math.round(oc.totalUSD * tc * 100) / 100);
+  const subRow = 22 + shift, ivaRow = 24 + shift, totRow = 26 + shift, tcRow = 28 + shift, mnRow = 29 + shift;
+  const lastProd = BASE + Math.max(N, ORIG) - 1;
+  const mn = Math.round(oc.totalUSD * tc * 100) / 100;
+  ws.getCell('N'+subRow).value = { formula: 'SUM(N'+BASE+':N'+lastProd+')', result: oc.subtotal };
+  ws.getCell('N'+ivaRow).value = { formula: 'N'+subRow+'*K'+ivaRow, result: oc.iva };
+  ws.getCell('N'+totRow).value = { formula: 'N'+subRow+'+N'+ivaRow, result: oc.totalUSD };
+  ws.getCell('N'+tcRow).value = tc;
+  ws.getCell('N'+mnRow).value = { formula: 'N'+totRow+'*N'+tcRow, result: mn };
   // Descargar
   const outBuf = await wb.xlsx.writeBuffer();
   const blob = new Blob([outBuf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
