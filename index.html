@@ -3291,6 +3291,12 @@ function ocLineaKey(cat) {
     }
     if (m.includes('LIGNUM')) return 'CAPPA_LIGNUM';
     if (m.includes('TERRA'))  return 'CAPPA_TERRA';
+    if (m.includes('WALNUT')) {
+      if (m.includes('HERRINGBONE') || m.includes('HBONE')) return 'CAPPA_WALNUT_HBONE';
+      if (m.includes('WILD'))     return 'CAPPA_WALNUT_WILD';
+      if (m.includes('TROPICAL')) return 'CAPPA_WALNUT_TROPICAL';
+      if (m.includes('EXOTIC'))   return 'CAPPA_WALNUT_EXOTIC';
+    }
     return 'CAPPA_WALNUTS';
   }
   return null;
@@ -3302,6 +3308,8 @@ const OC_DESCUENTOS = {
   BODEN_MOLDURA:[0.40,0.10,0.08], BODEN_SPLASH:[0.40,0.10],
   CAPPA_ALPES19:[0.40,0.10,0.13], CAPPA_ALPES24:[0.40,0.10,0.15],
   CAPPA_LIGNUM:[0.40,0.10,0.10], CAPPA_TERRA:[0.40,0.10,0.10], CAPPA_WALNUTS:[0.40,0.10,0.10],
+  CAPPA_WALNUT_WILD:[0.40,0.10,0.10], CAPPA_WALNUT_TROPICAL:[0.40,0.10,0.10],
+  CAPPA_WALNUT_EXOTIC:[0.40,0.10,0.10], CAPPA_WALNUT_HBONE:[0.40,0.10,0.10],
   CAPPA_MOLDURA:[0.40,0.10], CAPPA_INSUMO:[0.40,0.10], CAPPA_BOSTIK:[0.40],
   ONEDECKING:[0.40,0.10,0.08]
 };
@@ -3318,8 +3326,17 @@ const OC_LISTA = {
   // BODEN molduras — la lista por pieza ya vive en el catálogo (campo pvp)
   BODEN_MOLDURA:  { campo: 'pvp',  por: 'pieza' },
   // BODEN splash — la lista por pieza vive en el catálogo (campo costo)
-  BODEN_SPLASH:   { campo: 'costo', por: 'pieza' }
-  // CAPPA y OneDecking se derivan del costo del catálogo (validado contra la lista CAPPA No.79).
+  BODEN_SPLASH:   { campo: 'costo', por: 'pieza' },
+  // CAPPA — precio de lista POR M² (Lista No.79). LIGNUM/insumos se quedan
+  // derivados (el costo del catálogo ya da exacto: 95/108/101).
+  CAPPA_ALPES19:         { precio: 96.98,  por: 'm2' },
+  CAPPA_ALPES24:         { precio: 106.98, por: 'm2' },
+  CAPPA_TERRA:           { precio: 73.00,  por: 'm2' },
+  CAPPA_WALNUT_WILD:     { precio: 61.00,  por: 'm2' },
+  CAPPA_WALNUT_TROPICAL: { precio: 75.00,  por: 'm2' },
+  CAPPA_WALNUT_EXOTIC:   { precio: 117.00, por: 'm2' },
+  CAPPA_WALNUT_HBONE:    { precio: 96.00,  por: 'm2' }
+  // OneDecking se deriva del costo del catálogo (sin lista; "precios fijos sin cambio").
 };
 
 function ocDescuentos(cat) { return OC_DESCUENTOS[ocLineaKey(cat)] || null; }
