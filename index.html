@@ -3285,6 +3285,9 @@ function ocLineaKey(cat) {
   if (prov === 'CAPPA') {
     if (L === 'CAPPA MOLDURA') return 'CAPPA_MOLDURA';
     if (L === 'CAPPA INSUMO')  return m.includes('BOSTIK') ? 'CAPPA_BOSTIK' : 'CAPPA_INSUMO';
+    // Adhesivos: en el catálogo van con linea 'CAPPA', se detectan por nombre.
+    if (m.includes('BOSTIK')) return 'CAPPA_BOSTIK';            // -40
+    if (m.includes('ADHESIVO') || m.includes('CH2')) return 'CAPPA_INSUMO';  // -40 -10
     if (m.includes('ALPES')) {
       const es24 = f.includes('24') || f.includes('2.20') || m.includes('240');
       return es24 ? 'CAPPA_ALPES24' : 'CAPPA_ALPES19';
