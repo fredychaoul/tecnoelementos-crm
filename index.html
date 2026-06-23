@@ -806,8 +806,8 @@ const PRODUCTOS = [
   { linea:'CAPPA',      modelo:'UNIQUE TOBACCO',          clave:'FUQTOB240', formato:'24×2.20m | Nogal CN2mm | Barniz',      pvp:116.01,  costo:75.4077,  unidad:'M2', caja:3.168 },
   { linea:'CAPPA',      modelo:'UNIQUE BOURBONE HBONE',   clave:'Ver clave', formato:'12×60cm | Herringbone | Nogal',        pvp:121.92,  costo:79.2462, unidad:'M2', caja:1.2, cajaPar:true },
   { linea:'CAPPA',      modelo:'UNIQUE TOBACCO HBONE',    clave:'Ver clave', formato:'12×60cm | Herringbone | Nogal',        pvp:121.92,  costo:79.2462, unidad:'M2', caja:1.2, cajaPar:true },
-  { linea:'CAPPA',      modelo:'ADHESIVO CH2',            clave:'EUR800-AC080', formato:'Cubeta plástico 20kg',   pvp:121.13,  costo:78.732, unidad:'PIEZA'},
-  { linea:'CAPPA',      modelo:'BOSTIK ULTRA STRONG',      clave:'B800-842', formato:'Cubeta 15.1kg',     pvp:214.34,  costo:139.32, unidad:'PIEZA'},
+  { linea:'CAPPA ADHESIVO', modelo:'ADHESIVO CH2',            clave:'EUR800-AC080', formato:'Cubeta plástico 20kg',   pvp:121.13,  costo:78.732, unidad:'PIEZA'},
+  { linea:'CAPPA ADHESIVO', modelo:'BOSTIK ULTRA STRONG',      clave:'B800-842', formato:'Cubeta 15.1kg',     pvp:214.34,  costo:139.32, unidad:'PIEZA'},
   // ALPES Sobre Pedido — 30cm
 
   { linea:'CAPPA',      modelo:'ALPES ZERMATT',            clave:'NSBA6001190', formato:'19×1.90m | 14mm CN3mm | Barniz | Sobre Pedido',     pvp:70.09,  costo:45.5612,  unidad:'M2', caja:2.888 },
@@ -3284,8 +3284,8 @@ function ocLineaKey(cat) {
   }
   if (prov === 'CAPPA') {
     if (L === 'CAPPA MOLDURA') return 'CAPPA_MOLDURA';
-    if (L === 'CAPPA INSUMO')  return m.includes('BOSTIK') ? 'CAPPA_BOSTIK' : 'CAPPA_INSUMO';
-    // Adhesivos: en el catálogo van con linea 'CAPPA', se detectan por nombre.
+    if (L === 'CAPPA INSUMO' || L === 'CAPPA ADHESIVO') return m.includes('BOSTIK') ? 'CAPPA_BOSTIK' : 'CAPPA_INSUMO';
+    // Respaldo por nombre (por si quedara algún adhesivo con otra línea).
     if (m.includes('BOSTIK')) return 'CAPPA_BOSTIK';            // -40
     if (m.includes('ADHESIVO') || m.includes('CH2')) return 'CAPPA_INSUMO';  // -40 -10
     if (m.includes('ALPES')) {
