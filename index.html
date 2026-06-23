@@ -3342,6 +3342,33 @@ const OC_LISTA = {
 function ocDescuentos(cat) { return OC_DESCUENTOS[ocLineaKey(cat)] || null; }
 function ocFactor(ds) { return (ds || []).reduce((a, d) => a * (1 - d), 1); }
 
+// Nombre de COLECCIÓN (LÍNEA) y COLOR para el OC, a partir del modelo + key.
+const OC_COLECCION = {
+  BODEN_TRIBECA:'TRIBECA', BODEN_HBONE:'TRIBECA HERRINGBONE', BODEN_WALLCORE:'WALLCORE',
+  BODEN_MOLDURA:'MOLDURA', BODEN_SPLASH:'SPLASH',
+  CAPPA_ALPES19:'ALPES', CAPPA_ALPES24:'ALPES', CAPPA_LIGNUM:'LIGNUM', CAPPA_TERRA:'TERRA',
+  CAPPA_WALNUT_WILD:'WALNUTS', CAPPA_WALNUT_TROPICAL:'WALNUTS', CAPPA_WALNUT_EXOTIC:'WALNUTS',
+  CAPPA_WALNUT_HBONE:'WALNUTS HERRINGBONE', CAPPA_WALNUTS:'WALNUTS',
+  CAPPA_MOLDURA:'MOLDURA', CAPPA_INSUMO:'INSUMO', CAPPA_BOSTIK:'ADHESIVO'
+};
+function ocColeccionColor(cat, key) {
+  const modelo = String(cat.modelo || '').trim();
+  if (modelo.includes('—')) {                       // "TRIBECA — Smooth Oak", "Zoclo — Lavish"
+    const p = modelo.split('—');
+    return { linea: (p[0] || '').trim(), color: (p[1] || '').trim() };
+  }
+  if (key === 'ONEDECKING' || !OC_COLECCION[key]) { // colección = 1ª palabra, color = resto
+    const parts = modelo.split(/\s+/);
+    return { linea: parts[0] || modelo, color: parts.slice(1).join(' ') };
+  }
+  const col = OC_COLECCION[key];                     // "ALPES CATANIA" -> ALPES / CATANIA
+  let color = modelo;
+  const base = col.split(/\s+/)[0];
+  if (base) color = color.replace(new RegExp('\\b' + base + '\\b', 'ig'), '');
+  color = color.replace(/\b(WALNUT|WALNUTS|HERRINGBONE)\b/ig, '').replace(/\s+/g, ' ').trim();
+  return { linea: col, color: color || modelo };
+}
+
 // Convierte una partida cotizada en renglón de OC. ok:false con motivo si se omite.
 function ocRenglon(prodCot) {
   const cat = ocCat(prodCot.clave);
@@ -3382,12 +3409,10 @@ function ocRenglon(prodCot) {
     fuente = 'derivado';
   }
   const subtotal = cantidad * precioUnitario * factor;
-  const partes = String(cat.modelo || prodCot.nombre || '').split('—');
-  const linea = (partes[0] || '').trim();
-  const color = (partes[1] || '').trim();
+  const cc = ocColeccionColor(cat, key);
   return {
     ok: true, proveedor: prov, clave: cat.clave, descripcion: cat.modelo || prodCot.nombre,
-    linea, color, unidad, cantidad, fuente,
+    linea: cc.linea, color: cc.color, unidad, cantidad, fuente,
     precioUnitario: Math.round(precioUnitario * 10000) / 10000,
     descuentos: ds,
     subtotal: Math.round(subtotal * 100) / 100
@@ -3607,9 +3632,10 @@ async function _ocBuildExcelPlantilla(oc, meta) {
   put('N7', meta.folio || '');
   if (meta.comprador) put('A10', meta.comprador);
   // Filas de producto: la plantilla trae 5 (17-21). Ajusto a N renglones.
-  const BASE = 17, ORIG = 5, N = oc.renglones.length, shift = N - ORIG;
-  if (N > ORIG) ws.duplicateRow(21, N - ORIG, true);
-  else if (N < ORIG) ws.spliceRows(BASE + N, ORIG - N);
+  const BASE = 17, ORIG = 5, N = oc.renglones.length, shift = Math.max(0, N - ORIG);
+  if (N > ORIG) ws.duplicateRow(21, N - ORIG, true);   // agrega filas solo si hay más de 5
+  // Con 5 o menos se dejan las filas en blanco de la plantilla (no se borran, para
+  // no romper el bloque de totales combinado de la derecha).
   oc.renglones.forEach((r, i) => {
     const row = BASE + i;
     put('A'+row, r.cantidad);
@@ -3624,6 +3650,10 @@ async function _ocBuildExcelPlantilla(oc, meta) {
     put('M'+row, r.descuentos[3] != null ? r.descuentos[3] : null);
     put('N'+row, r.subtotal);
   });
+  // Limpiar filas de producto sobrantes (5 - N) para que queden en blanco
+  for (let row = BASE + N; row <= BASE + ORIG - 1 && N < ORIG; row++) {
+    ['A','B','C','E','F','H','J','K','L','M','N'].forEach(c => { ws.getCell(c + row).value = null; });
+  }
   // Totales (se recorren por shift al cambiar el número de filas)
   const tc = parseFloat(meta.tc) || 0;
   put('N'+(22+shift), oc.subtotal);
