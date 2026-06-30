@@ -1929,7 +1929,7 @@ async function guardarCotizacion() {
       datos.id_borrador = null;
       lista.unshift(datos);
       await saveCotizaciones(lista);
-      await incrementFolio();
+      // getNextFolio() ya avanza el consecutivo (no llamar incrementFolio: doble +1)
       window._editandoBorrador = null;
       currentFolio = await getNextFolio();
       document.getElementById('folio-display').textContent = 'TEC-' + String(currentFolio).padStart(4,'0');
@@ -1968,7 +1968,7 @@ async function guardarCotizacion() {
 
     lista.unshift(datos);
     await saveCotizaciones(lista);
-    await incrementFolio();
+    // getNextFolio() ya avanza el consecutivo (no llamar incrementFolio: doble +1)
     currentFolio = await getNextFolio();
     document.getElementById('folio-display').textContent = 'TEC-' + String(currentFolio).padStart(4,'0');
     const btnG = document.querySelector('button[onclick="guardarCotizacion()"]');
