@@ -2366,75 +2366,63 @@ async function generarPDF(cotData) {
     y += 3;
   }
 
-  // ══ BLOQUE DE TOTALES (monocromo, justo tras los renglones) ══
-  y += 4;
-  if (y > 235) { doc.addPage(); y = 20; }
+  // ══ BLOQUE DE TOTALES (agrupado: Productos / Instalación → TOTAL, como la maqueta) ══
+  y += 6;
+  if (y > 232) { doc.addPage(); y = 20; }
   const tx = pw - 84, tw = 72;
-
-  // SUBTOTAL productos
-  doc.setFillColor(74,74,78); doc.rect(tx, y, tw, 6, 'F');
-  doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
-  doc.text('SUBTOTAL PRODUCTOS', tx+4, y+4);
-  doc.text(simbolo + datos.subtotal.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), tx+tw-4, y+4, {align:'right'});
-  y += 6;
-
-  // FLETE — 3 escenarios
-  if (datos.flete_escenario === 'incluido') {
-    doc.setFillColor(74,74,78); doc.rect(tx, y, tw, 6, 'F');
-    doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(7);
-    doc.text('FLETE INCLUIDO', tx+4, y+4);
-    doc.setFont('helvetica','normal');
-    doc.text('Sin cargo adicional', tx+tw-4, y+4, {align:'right'});
-    y += 6;
-  } else if (datos.flete_escenario === 'cobrado' && datos.flete_monto > 0) {
-    doc.setFillColor(74,74,78); doc.rect(tx, y, tw, 6, 'F');
-    doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
-    doc.text('FLETE', tx+4, y+4);
-    doc.text(simbolo + datos.flete_monto.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), tx+tw-4, y+4, {align:'right'});
-    y += 6;
-  }
-
-  // DESCUENTO (si aplica)
-  if (datos.descuento_pct && datos.descuento_pct > 0) {
-    const descBase = datos.subtotal + (datos.flete_escenario==='cobrado' ? datos.flete_monto : 0);
-    const descMontoPDF = descBase * (datos.descuento_pct / 100);
-    doc.setFillColor(74,74,78); doc.rect(tx, y, tw, 6, 'F');
-    doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
-    doc.text('DESCUENTO ' + datos.descuento_pct + '%', tx+4, y+4);
-    doc.text('-' + simbolo + descMontoPDF.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), tx+tw-4, y+4, {align:'right'});
-    y += 6;
-  }
-
-  // IVA 16% productos
-  doc.setFillColor(74,74,78); doc.rect(tx, y, tw, 6, 'F');
-  doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
   const conIvaProdPDF = document.getElementById('prod-iva')?.value !== 'sin';
-  doc.text(conIvaProdPDF ? 'IVA 16%' : 'Sin IVA', tx+4, y+4);
-  doc.text(simbolo + datos.iva.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), tx+tw-4, y+4, {align:'right'});
-  y += 6;
-
-  // Mano de obra (si existe)
   const instSrvs   = datos.instalacion || [];
   const subInstPDF = instSrvs.reduce((s,i) => s + i.total, 0);
   const conIvaPDF  = datos.inst_con_iva || false;
   const ivaInstPDF = conIvaPDF ? subInstPDF * 0.16 : 0;
-  if (subInstPDF > 0) {
-    doc.setFillColor(74,74,78); doc.rect(tx, y, tw, 6, 'F');
-    doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(7);
-    doc.text('MANO DE OBRA' + (conIvaPDF ? ' + IVA' : ' s/IVA'), tx+4, y+4);
-    doc.text('$'+(subInstPDF+ivaInstPDF).toLocaleString('es-MX',{minimumFractionDigits:2}), tx+tw-4, y+4, {align:'right'});
+
+  // Etiqueta de grupo (gris, pequeña)
+  const totGrupo = (t) => {
+    doc.setFont('helvetica','bold'); doc.setFontSize(6); doc.setTextColor(140,144,152);
+    doc.text(t, tx, y + 3);
+    y += 5;
+  };
+  // Renglón claro con línea fina inferior
+  const totLinea = (label, val) => {
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(90,94,102);
+    doc.text(label, tx, y + 3.5);
+    if (val) { doc.setTextColor(51,51,51); doc.text(val, tx + tw, y + 3.5, {align:'right'}); }
+    doc.setDrawColor(219,224,236); doc.setLineWidth(0.2); doc.line(tx, y + 5.5, tx + tw, y + 5.5);
     y += 6;
+  };
+
+  // PRODUCTOS
+  totGrupo('PRODUCTOS');
+  totLinea('Subtotal productos', simbolo + datos.subtotal.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}));
+  if (datos.flete_escenario === 'incluido') {
+    totLinea('Flete incluido', 'Sin cargo');
+  } else if (datos.flete_escenario === 'cobrado' && datos.flete_monto > 0) {
+    totLinea('Flete', simbolo + datos.flete_monto.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}));
+  }
+  if (datos.descuento_pct && datos.descuento_pct > 0) {
+    const descBase = datos.subtotal + (datos.flete_escenario==='cobrado' ? datos.flete_monto : 0);
+    const descMontoPDF = descBase * (datos.descuento_pct / 100);
+    totLinea('Descuento ' + datos.descuento_pct + '%', '-' + simbolo + descMontoPDF.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}));
+  }
+  totLinea(conIvaProdPDF ? 'IVA 16%' : 'Sin IVA', simbolo + datos.iva.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}));
+
+  // INSTALACIÓN (solo si hay mano de obra)
+  if (subInstPDF > 0) {
+    y += 1.5;
+    totGrupo('INSTALACIÓN');
+    totLinea('Subtotal mano de obra' + (conIvaPDF ? ' + IVA' : ' (sin IVA)'), '$' + (subInstPDF + ivaInstPDF).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}));
   }
 
-  // TOTAL GENERAL (carboncillo + código de moneda)
+  // TOTAL GENERAL — única banda carboncillo + código de moneda
+  y += 2.5;
   const totalPDF = datos.total;
   let totalStr = simbolo + totalPDF.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
   if (datos.moneda === 'MXN') totalStr += ' MXN';
-  doc.setFillColor(51,51,51); doc.rect(tx, y, tw, 8, 'F');
+  doc.setFillColor(51,51,51); doc.rect(tx, y, tw, 8.5, 'F');
   doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(9);
-  doc.text('TOTAL GENERAL', tx+4, y+5.5);
-  doc.text(totalStr, tx+tw-4, y+5.5, {align:'right'});
-  y += 8;
+  doc.text('TOTAL GENERAL', tx + 3, y + 5.7);
+  doc.text(totalStr, tx + tw - 3, y + 5.7, {align:'right'});
+  y += 8.5;
 
   // ══ OBSERVACIONES (después del total) ══
   if (datos.observaciones) {
