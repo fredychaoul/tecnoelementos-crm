@@ -119,6 +119,64 @@
   .badge-won { background: var(--ok-tint); color: var(--ok); }
   .badge-lost { background: var(--lost-tint); color: var(--lost); }
 
+  /* CRM LISTA — filas expandibles + timeline de versiones */
+  .crm-list { border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--surface); }
+  .crm-head, .crmrow-main { display: grid; grid-template-columns: 150px 1.6fr 1.1fr 130px 120px; align-items: center; gap: 10px; }
+  .crm-head { padding: 11px 16px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+  .crm-head span { font-size: 11px; font-weight: 600; color: var(--ink-soft); letter-spacing: .3px; }
+  .crm-head .r, .crmrow-main .r { text-align: right; justify-self: end; }
+  .crmrow { border-bottom: 1px solid var(--line); }
+  .crmrow:last-child { border-bottom: none; }
+  .crmrow-main { padding: 12px 16px; cursor: pointer; transition: background .13s var(--ease-out); }
+  .crmrow-main:not(.is-borrador):hover { background: var(--surface-2); }
+  .folio-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .folio-cell .chev { width: 15px; height: 15px; color: var(--ink-faint); flex-shrink: 0; transition: transform .18s var(--ease-out); }
+  .crmrow.open .chev { transform: rotate(90deg); }
+  .fid { font-family: var(--font-brand); font-size: 13px; font-weight: 700; letter-spacing: .4px; font-variant-numeric: tabular-nums; }
+  .vchip { font-size: 10.5px; font-weight: 600; color: var(--ink-soft); background: var(--surface-2); border: 1px solid var(--line); padding: 1px 6px; border-radius: var(--r-pill); white-space: nowrap; }
+  .cli-cell { font-size: 13.5px; font-weight: 600; min-width: 0; }
+  .cli-cell .sub { font-size: 11.5px; font-weight: 400; color: var(--ink-faint); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .proj-cell { font-size: 12.5px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tot-cell { font-family: var(--font-brand); font-size: 13.5px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+  .tot-cell .cur { font-family: var(--font); font-size: 10.5px; color: var(--ink-faint); font-weight: 500; margin-left: 3px; }
+  .btn-discard { background: var(--lost-tint); border: 1px solid var(--lost); color: var(--lost); padding: 4px 10px; border-radius: var(--r-sm); cursor: pointer; font-size: 11px; font-weight: 600; transition: transform .14s var(--ease-out); }
+  .btn-discard:active { transform: scale(.96); }
+  .badge-borrador { background: var(--warn); color: #fff; padding: 2px 8px; border-radius: var(--r-pill); font-size: 11px; font-weight: 700; }
+  .crm-versions { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .24s var(--ease-out); }
+  .crmrow.open .crm-versions { grid-template-rows: 1fr; }
+  .crm-versions-in { overflow: hidden; }
+  .vpanel { background: var(--surface-2); padding: 8px 16px 16px 52px; }
+  .vhdr { font-size: 11px; font-weight: 600; color: var(--ink-soft); padding: 10px 0 8px; }
+  .tl { display: flex; flex-direction: column; }
+  .tl-item { display: grid; grid-template-columns: 18px 1fr; gap: 12px; align-items: stretch; }
+  .tl-rail { position: relative; display: flex; justify-content: center; width: 18px; }
+  .tl-rail::before { content: ''; position: absolute; top: 0; bottom: 0; width: 2px; background: var(--line); }
+  .tl-item:first-child .tl-rail::before { top: 16px; }
+  .tl-item:last-child .tl-rail::before { bottom: calc(100% - 16px); }
+  .tl-dot { position: relative; z-index: 1; width: 9px; height: 9px; border-radius: 50%; margin-top: 11px; background: var(--surface-2); border: 2px solid var(--ink-faint); }
+  .tl-item.sent .tl-dot { background: var(--ok); border-color: var(--ok); }
+  .tl-body { display: grid; grid-template-columns: 40px 1fr 96px 92px auto; align-items: center; gap: 8px; padding: 6px 10px; margin: 2px 0; border-radius: var(--r-sm); font-variant-numeric: tabular-nums; }
+  .tl-item.sent .tl-body { background: var(--surface); border: 1px solid var(--line); }
+  .tl-body .vn { font-family: var(--font-brand); font-size: 12.5px; font-weight: 700; }
+  .tl-body .vd { font-size: 12px; color: var(--ink-soft); }
+  .tl-body .vt { font-size: 12.5px; font-weight: 600; text-align: right; }
+  .tl-body .delta { font-size: 11px; font-weight: 600; color: var(--ink-soft); text-align: right; }
+  .tl-tag { justify-self: end; display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; color: var(--ok); white-space: nowrap; }
+  .btn-detalle { margin: 10px 0 0 30px; font-size: 12px; font-weight: 600; color: var(--ink-soft); background: none; border: none; cursor: pointer; padding: 4px 0; text-decoration: underline; text-underline-offset: 3px; transition: color .14s var(--ease-out); }
+  .btn-detalle:hover { color: var(--ink); }
+  @media (max-width: 768px) {
+    .crm-head { display: none; }
+    .crmrow-main { grid-template-columns: 1fr auto !important; gap: 6px 10px; }
+    .crmrow-main .proj-cell { display: none; }
+    .folio-cell { grid-column: 1; grid-row: 1; }
+    .cli-cell { grid-column: 1; grid-row: 2; }
+    .tot-cell { grid-column: 2; grid-row: 1; }
+    .crmrow-main .r { grid-column: 2; grid-row: 2; }
+    .vpanel { padding-left: 16px; }
+    .tl-body { grid-template-columns: 34px 1fr auto; }
+    .tl-body .vd, .tl-body .delta { display: none; }
+  }
+
   /* STATS */
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
   .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; box-shadow: var(--shadow); }
@@ -2491,32 +2549,59 @@ async function renderCRM() {
     return;
   }
 
-  const rows = filtered.map(c => `
-    <tr onclick="if(!this.dataset.borrador)verDetalle(this.dataset.folio)" style="cursor:${c.esBorrador?'default':'pointer'}" data-folio="${c.folio}" data-borrador="${c.esBorrador?'1':''}" data-id-borrador="${c.id_borrador||''}" data-cliente-borrador="${c.cliente||''}">
-      <td><strong>${c.esBorrador ? '<span style="background:#856404;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;">BORRADOR</span>' : 'TEC-' + String(c.folio).padStart(4,'0')}</strong></td>
-      <td>${c.cliente}</td>
-      <td>${c.ciudad||'—'}</td>
-      <td>${c.proyecto||'—'}</td>
-      <td>${c.productos.map(p=>p.nombre).join(', ').substring(0,40)}</td>
-      <td>${c.simbolo}${c.total.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-      <td>${c.fecha}</td>
-      <td>
-        ${c.esBorrador
-          ? '<button onclick="event.stopPropagation();descartarBorrador(this.closest(\'tr\'))" style="background:#fff0f0;border:1px solid #ffcccc;color:#cc4444;padding:3px 10px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;">🗑 Descartar</button>'
-          : ('<span class=\"badge ' + (badgeClass[c.status]||'badge-pending') + '\">' + c.status + '</span>')
-        }
-      </td>
-    </tr>`).join('');
+  const fmtMoney = (sym, n) => sym + Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  const rows = filtered.map(c => {
+    const prodSummary = c.productos.map(p=>p.nombre).join(' · ').substring(0,60);
+    if (c.esBorrador) {
+      return `
+      <div class="crmrow" data-folio="${c.folio}" data-borrador="1" data-id-borrador="${c.id_borrador||''}" data-cliente-borrador="${c.cliente||''}">
+        <div class="crmrow-main is-borrador">
+          <div class="folio-cell"><span class="badge-borrador">BORRADOR</span></div>
+          <div class="cli-cell">${c.cliente||'—'}<div class="sub">${prodSummary}</div></div>
+          <div class="proj-cell">${c.proyecto||'—'}</div>
+          <div class="tot-cell">${fmtMoney(c.simbolo, c.total)}</div>
+          <div class="r"><button class="btn-discard" onclick="descartarBorrador(this.closest('.crmrow'))">🗑 Descartar</button></div>
+        </div>
+      </div>`;
+    }
+    const versiones = (c.versiones && c.versiones.length) ? c.versiones
+      : [{ version: 1, fecha: c.fecha, total: c.total, enviada: null }];
+    const verActual = c.version || versiones.length || 1;
+    const tl = versiones.map((v, i) => {
+      const prev = i > 0 ? versiones[i-1] : null;
+      const delta = prev ? (Number(v.total) - Number(prev.total)) : 0;
+      const deltaStr = prev ? ((delta >= 0 ? '+' : '−') + fmtMoney(c.simbolo, Math.abs(delta))) : '—';
+      const sent = v.enviada === true;
+      return `
+        <div class="tl-item${sent ? ' sent' : ''}"><div class="tl-rail"><span class="tl-dot"></span></div>
+          <div class="tl-body"><span class="vn">v${v.version || (i+1)}</span><span class="vd">${v.fecha || ''}</span><span class="vt">${fmtMoney(c.simbolo, v.total)}</span><span class="delta">${deltaStr}</span>${sent ? '<span class="tl-tag">✓ Enviada</span>' : ''}</div></div>`;
+    }).join('');
+    return `
+    <div class="crmrow" data-folio="${c.folio}">
+      <div class="crmrow-main" onclick="toggleCrmRow(this)">
+        <div class="folio-cell"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="fid">TEC-${String(c.folio).padStart(4,'0')}</span><span class="vchip">v${verActual}</span></div>
+        <div class="cli-cell">${c.cliente}<div class="sub">${prodSummary}</div></div>
+        <div class="proj-cell">${c.proyecto||'—'}</div>
+        <div class="tot-cell">${fmtMoney(c.simbolo, c.total)}</div>
+        <div class="r"><span class="badge ${badgeClass[c.status]||'badge-pending'}">${c.status}</span></div>
+      </div>
+      <div class="crm-versions"><div class="crm-versions-in"><div class="vpanel">
+        <div class="vhdr">Historial de versiones</div>
+        <div class="tl">${tl}</div>
+        <button class="btn-detalle" onclick="verDetalle('${c.folio}')">Ver detalle completo →</button>
+      </div></div></div>
+    </div>`;
+  }).join('');
 
   document.getElementById('crm-container').innerHTML = `
-    <table class="crm-table">
-      <thead><tr>
-        <th>Folio</th><th>Cliente</th><th>Ciudad</th><th>Proyecto</th>
-        <th>Productos</th><th>Total</th><th>Fecha</th><th>Estatus</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+    <div class="crm-list">
+      <div class="crm-head"><span>Folio</span><span>Cliente</span><span>Proyecto</span><span class="r">Total</span><span class="r">Estatus</span></div>
+      ${rows}
+    </div>`;
 }
+
+function toggleCrmRow(el) { el.closest('.crmrow').classList.toggle('open'); }
 
 async function descartarBorrador(tr) {
   if (!confirm('¿Descartar este borrador?')) return;
