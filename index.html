@@ -7,145 +7,187 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  @font-face{font-family:'GeBody';src:url('fonts/GeBody.ttf') format('truetype');font-weight:400 700;font-display:swap}
+  @font-face{font-family:'Luvee';src:url('fonts/Luvee.otf') format('opentype');font-weight:400;font-display:swap}
+
+  /* ═══════════════ TOKENS DE MARCA (identidad real: #333333 + #F2F5FC) ═══════════════ */
+  :root{
+    --bg:#EDF0F7; --surface:#FFFFFF; --surface-2:#F2F5FC; --line:#DBE0EC;
+    --ink:#333333; --ink-soft:#61656D; --ink-faint:#99A0AC;
+    --brand:#333333; --brand-ink:#F2F5FC; --brand-tint:#E5EAF5;
+    /* semáforo de estado: funcional, apagado, NO es acento de marca */
+    --ok:#2F7D57; --ok-tint:#E4F0EA; --warn:#8A6410; --warn-tint:#F2ECD8;
+    --sent:#356B8C; --sent-tint:#E2ECF3; --lost:#A5433A; --lost-tint:#F3E4E2;
+    --r-sm:6px; --r:10px; --r-lg:14px; --r-pill:999px;
+    --ease-out:cubic-bezier(0.32,0.72,0,1); --ease-out-quart:cubic-bezier(0.25,1,0.5,1);
+    --shadow:0 1px 3px rgba(51,51,51,.07), 0 1px 2px rgba(51,51,51,.05);
+    --font:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --font-brand:'GeBody',var(--font); --font-fine:'Luvee',var(--font);
+    --z-dropdown:20; --z-sticky:30; --z-modal:100; --z-toast:120;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#191B1F; --surface:#22252A; --surface-2:#2A2E35; --line:#3A3E47;
+      --ink:#F2F5FC; --ink-soft:#A6ADBA; --ink-faint:#787F8B;
+      --brand:#F2F5FC; --brand-ink:#22252A; --brand-tint:#2E323B;
+      --ok:#5BB185; --ok-tint:#1D2A23; --warn:#CFA24E; --warn-tint:#2B2617;
+      --sent:#6CA4C6; --sent-tint:#1B2831; --lost:#DB7C72; --lost-tint:#2D1E1C;
+      --shadow:0 1px 3px rgba(0,0,0,.45);
+    }
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', sans-serif; background: #F2F2F2; color: #1A1A1A; }
+  body { font-family: var(--font); background: var(--bg); color: var(--ink); }
 
   /* NAV */
-  nav { background: #1A1A1A; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
-  nav .brand { color: white; font-size: 15px; font-weight: 700; letter-spacing: 2px; }
-  nav .tabs { display: flex; gap: 4px; }
-  nav .tab { color: #888; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all .2s; }
-  nav .tab.active, nav .tab:hover { background: #333; color: white; }
+  nav { background: var(--surface); border-bottom: 1px solid var(--line); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  nav .brand { display: flex; align-items: center; gap: 11px; }
+  nav .brand .chip { width: 30px; height: 30px; border-radius: 8px; overflow: hidden; flex-shrink: 0; display: block; }
+  nav .brand .wm { display: flex; align-items: baseline; font-size: 16px; letter-spacing: 1.5px; line-height: 1; }
+  nav .brand .wm b { font-family: var(--font-brand); font-weight: 700; color: var(--ink); }
+  nav .brand .wm em { font-family: var(--font-fine); font-style: normal; font-weight: 400; color: var(--ink); letter-spacing: 2.5px; }
+  nav .tabs { display: flex; gap: 2px; }
+  nav .tab { color: var(--ink-soft); padding: 8px 14px; border-radius: var(--r-sm); cursor: pointer; font-size: 13px; font-weight: 500; transition: background .15s var(--ease-out), color .15s var(--ease-out); }
+  nav .tab:hover { background: var(--surface-2); color: var(--ink); }
+  nav .tab.active { background: var(--brand-tint); color: var(--ink); font-weight: 600; }
 
   /* LAYOUT */
   .page { display: none; padding: 32px; max-width: 1100px; margin: 0 auto; }
   .page.active { display: block; }
 
   /* CARDS */
-  .card { background: white; border-radius: 12px; padding: 28px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-  .card h2 { font-size: 15px; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; color: #1A1A1A; border-bottom: 2px solid #1A1A1A; padding-bottom: 10px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 28px; margin-bottom: 24px; box-shadow: var(--shadow); }
+  .card h2 { font-size: 13px; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
 
   /* FORM */
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .form-grid.three { grid-template-columns: 1fr 1fr 1fr; }
   .form-group { display: flex; flex-direction: column; gap: 6px; }
   .form-group.full { grid-column: 1 / -1; }
-  label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: #555; }
-  input, select, textarea { border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: 'Inter', sans-serif; outline: none; transition: border .2s; background: #FAFAFA; }
-  input:focus, select:focus, textarea:focus { border-color: #1A1A1A; background: white; }
+  label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-soft); }
+  input, select, textarea { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; font-size: 13px; font-family: var(--font); color: var(--ink); outline: none; transition: border-color .15s var(--ease-out), background .15s var(--ease-out); background: var(--surface-2); }
+  input:focus, select:focus, textarea:focus { border-color: var(--ink); background: var(--surface); }
+  input::placeholder, textarea::placeholder { color: var(--ink-faint); }
   textarea { resize: vertical; min-height: 60px; }
 
   /* PRODUCTOS TABLE */
-  .productos-header { display: grid; grid-template-columns: 1.3fr 1.6fr 0.9fr 1.8fr 0.55fr 0.55fr 1.15fr 1fr 34px; gap: 5px; padding: 7px 10px; background: #1A1A1A; border-radius: 8px 8px 0 0; }
-  .productos-header span { color: white; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .producto-row { display: grid; grid-template-columns: 1.3fr 1.6fr 0.9fr 1.8fr 0.55fr 0.55fr 1.15fr 1fr 34px; gap: 5px; padding: 5px 10px; background: #F8F8F8; border-bottom: 1px solid #EEE; align-items: center; min-width: 0; }
-  .producto-row:nth-child(even) { background: white; }
+  .productos-header { display: grid; grid-template-columns: 1.3fr 1.6fr 0.9fr 1.8fr 0.55fr 0.55fr 1.15fr 1fr 34px; gap: 5px; padding: 9px 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm) var(--r-sm) 0 0; }
+  .productos-header span { color: var(--ink-soft); font-size: 10px; font-weight: 600; letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .producto-row { display: grid; grid-template-columns: 1.3fr 1.6fr 0.9fr 1.8fr 0.55fr 0.55fr 1.15fr 1fr 34px; gap: 5px; padding: 5px 10px; background: var(--surface); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); align-items: center; min-width: 0; }
+  .producto-row:nth-child(even) { background: var(--surface-2); }
   .producto-row input, .producto-row select { padding: 5px 6px; font-size: 11px; width: 100%; box-sizing: border-box; min-width: 0; }
-  .producto-row .total-cell { font-size: 11px; font-weight: 600; color: #1A1A1A; text-align: right; white-space: nowrap; }
-  .btn-remove { background: none; border: none; color: #CCC; cursor: pointer; font-size: 18px; padding: 4px; border-radius: 4px; transition: color .2s; }
-  .caja-hint { font-size: 10px; color: #888; margin-top: 3px; display: none; }
+  .producto-row .total-cell { font-family: var(--font-brand); font-size: 11px; font-weight: 700; color: var(--ink); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .btn-remove { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 18px; padding: 4px; border-radius: 4px; transition: color .15s var(--ease-out), transform .15s var(--ease-out); }
+  .caja-hint { font-size: 10px; color: var(--ink-soft); margin-top: 3px; display: none; }
   .caja-hint.visible { display: block; }
-  .caja-hint .caja-redondear { color: #E8C96B; cursor: pointer; text-decoration: underline; font-weight: 600; }
-  .caja-hint.ok { color: #7EC87E; }
-  .btn-remove:hover { color: #e74c3c; }
+  .caja-hint .caja-redondear { color: var(--ink); cursor: pointer; text-decoration: underline; font-weight: 600; }
+  .caja-hint.ok { color: var(--ok); }
+  .btn-remove:hover { color: var(--lost); }
+  .btn-remove:active { transform: scale(.9); }
 
   /* TOTALES */
   .totales { display: flex; justify-content: flex-end; margin-top: 16px; }
-  .totales-box { background: #1A1A1A; border-radius: 10px; padding: 20px 28px; min-width: 280px; }
-  .totales-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; color: white; font-size: 13px; border-bottom: 1px solid #333; }
-  .totales-row:last-child { border-bottom: none; font-size: 16px; font-weight: 700; padding-top: 10px; }
+  .totales-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 24px; min-width: 280px; }
+  .totales-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; color: var(--ink); font-size: 13px; border-bottom: 1px solid var(--line); }
+  .totales-row:last-child { border-bottom: none; font-family: var(--font-brand); font-size: 17px; font-weight: 700; padding-top: 10px; font-variant-numeric: tabular-nums; }
+  .totales-row #t-total, .totales-row #t-subtotal, .totales-row #t-iva { font-variant-numeric: tabular-nums; }
+  /* mini-controles embebidos en la caja de totales */
+  .mini-select { background: var(--surface-2); color: var(--ink-soft); border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; font-size: 11px; font-weight: 600; font-family: var(--font); }
+  .mini-input { width: 52px; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; font-size: 11px; font-weight: 600; text-align: center; }
 
   /* BUTTONS */
-  .btn { padding: 11px 22px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .2s; letter-spacing: .3px; }
-  .btn-dark { background: #1A1A1A; color: white; }
-  .btn-dark:hover { background: #333; }
-  .btn-outline { background: white; color: #1A1A1A; border: 1.5px solid #1A1A1A; }
-  .btn-outline:hover { background: #F5F5F5; }
-  .btn-green { background: #27ae60; color: white; }
-  .btn-green:hover { background: #219a52; }
+  .btn { padding: 11px 22px; border-radius: var(--r-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: transform .14s var(--ease-out), background .14s var(--ease-out), filter .14s var(--ease-out), border-color .14s var(--ease-out); letter-spacing: .2px; }
+  .btn:active { transform: scale(.97); }
+  .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .btn-dark { background: var(--brand); color: var(--brand-ink); }
+  .btn-dark:hover { filter: brightness(1.12); }
+  .btn-outline { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+  .btn-outline:hover { border-color: var(--ink-soft); background: var(--surface-2); }
+  .btn-green { background: var(--ok); color: #fff; }
+  .btn-green:hover { filter: brightness(1.08); }
   .btn-sm { padding: 7px 14px; font-size: 12px; }
   .btn-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
 
   /* CRM TABLE */
   .crm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .crm-table th { background: #1A1A1A; color: white; padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; }
-  .crm-table td { padding: 11px 14px; border-bottom: 1px solid #F0F0F0; }
-  .crm-table tr:hover td { background: #FAFAFA; }
-  .badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .badge-pending { background: #FFF3CD; color: #856404; }
-  .badge-sent { background: #D1ECF1; color: #0C5460; }
-  .badge-won { background: #D4EDDA; color: #155724; }
-  .badge-lost { background: #F8D7DA; color: #721C24; }
+  .crm-table th { background: var(--surface-2); color: var(--ink-soft); padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .3px; border-bottom: 1px solid var(--line); }
+  .crm-table td { padding: 11px 14px; border-bottom: 1px solid var(--line); color: var(--ink); }
+  .crm-table tr:hover td { background: var(--surface-2); }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--r-pill); font-size: 11px; font-weight: 600; }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .9; }
+  .badge-pending { background: var(--warn-tint); color: var(--warn); }
+  .badge-sent { background: var(--sent-tint); color: var(--sent); }
+  .badge-won { background: var(--ok-tint); color: var(--ok); }
+  .badge-lost { background: var(--lost-tint); color: var(--lost); }
 
   /* STATS */
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-  .stat { background: white; border-radius: 12px; padding: 20px 24px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-  .stat .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: #888; margin-bottom: 8px; }
-  .stat .value { font-size: 26px; font-weight: 700; color: #1A1A1A; }
-  .stat .sub { font-size: 12px; color: #888; margin-top: 4px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; box-shadow: var(--shadow); }
+  .stat .label { font-size: 11px; font-weight: 600; letter-spacing: .3px; color: var(--ink-soft); margin-bottom: 8px; }
+  .stat .value { font-family: var(--font-brand); font-size: 26px; font-weight: 700; color: var(--ink); letter-spacing: .3px; font-variant-numeric: tabular-nums; }
+  .stat .sub { font-size: 12px; color: var(--ink-faint); margin-top: 4px; }
 
   /* SEARCH */
   .search-bar { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; }
   .search-bar input { flex: 1; }
 
   /* MODAL */
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000; align-items: center; justify-content: center; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,28,32,.5); z-index: var(--z-modal); align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
-  .modal { background: white; border-radius: 14px; padding: 32px; max-width: 520px; width: 90%; }
+  .modal { background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 32px; max-width: 520px; width: 90%; }
   .modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
-  .modal p { font-size: 13px; color: #555; margin-bottom: 20px; line-height: 1.6; }
+  .modal p { font-size: 13px; color: var(--ink-soft); margin-bottom: 20px; line-height: 1.6; }
   .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
 
   /* NOTICE */
-  .notice { background: #FFF8E1; border: 1px solid #FFE082; border-radius: 8px; padding: 12px 16px; font-size: 12px; color: #5D4037; margin-bottom: 20px; }
+  .notice { background: var(--warn-tint); border: 1px solid var(--warn); border-radius: var(--r-sm); padding: 12px 16px; font-size: 12px; color: var(--warn); margin-bottom: 20px; }
 
-  .folio-badge { background: #1A1A1A; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .folio-badge { background: var(--brand); color: var(--brand-ink); padding: 4px 12px; border-radius: var(--r-pill); font-size: 12px; font-weight: 700; font-family: var(--font-brand); font-variant-numeric: tabular-nums; }
 
-  /* FILA MANUAL */
-  .producto-row.manual-row { background: #FFFBF0; border-left: 3px solid #F39C12; }
-  .producto-row.manual-row:nth-child(even) { background: #FFF8E8; }
-  .badge-manual { background: #FFF3CD; color: #856404; font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: 700; }
+  /* FILA MANUAL — fondo tintado, SIN side-stripe */
+  .producto-row.manual-row { background: var(--warn-tint); }
+  .producto-row.manual-row:nth-child(even) { background: var(--warn-tint); }
+  .badge-manual { background: var(--warn-tint); color: var(--warn); font-size: 9px; padding: 2px 6px; border-radius: var(--r-pill); font-weight: 700; }
 
   /* MODAL GRANDE */
   .modal-lg { max-width: 780px; max-height: 88vh; overflow-y: auto; }
   .modal-section { margin-bottom: 18px; }
-  .modal-section h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #888; margin-bottom: 10px; border-bottom: 1px solid #F0F0F0; padding-bottom: 6px; }
+  .modal-section h4 { font-size: 11px; font-weight: 700; letter-spacing: .3px; color: var(--ink-soft); margin-bottom: 10px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
   .detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-  .detail-item { background: #F8F8F8; border-radius: 8px; padding: 10px 14px; }
-  .detail-item .lbl { font-size: 10px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing:.5px; margin-bottom: 3px; }
-  .detail-item .val { font-size: 13px; font-weight: 600; color: #1A1A1A; }
+  .detail-item { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 14px; }
+  .detail-item .lbl { font-size: 10px; font-weight: 600; color: var(--ink-soft); letter-spacing:.3px; margin-bottom: 3px; }
+  .detail-item .val { font-size: 13px; font-weight: 600; color: var(--ink); }
   .prod-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
-  .prod-table th { background: #1A1A1A; color: white; padding: 7px 10px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; }
-  .prod-table td { padding: 8px 10px; border-bottom: 1px solid #F0F0F0; }
+  .prod-table th { background: var(--surface-2); color: var(--ink-soft); padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 600; border-bottom: 1px solid var(--line); }
+  .prod-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); }
   .prod-table tr:last-child td { border-bottom: none; }
-  .total-strip { background: #1A1A1A; color: white; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
-  .total-strip span:first-child { font-size: 12px; font-weight: 600; color: #AAA; }
-  .total-strip span:last-child { font-size: 18px; font-weight: 700; }
+  .total-strip { background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); border-radius: var(--r-sm); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+  .total-strip span:first-child { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+  .total-strip span:last-child { font-family: var(--font-brand); font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
   /* STATS mejorados */
-  .stat .sub2 { font-size: 11px; color: #27ae60; margin-top: 2px; font-weight: 600; }
-  .stat-tasa .value { color: #27ae60; }
+  .stat .sub2 { font-size: 11px; color: var(--ok); margin-top: 2px; font-weight: 600; }
+  .stat-tasa .value { color: var(--ok); }
 
   /* EXPORTAR BTN */
-  .btn-export { background: #1a7a40; color: white; }
-  .btn-export:hover { background: #155d32; }
+  .btn-export { background: var(--ok); color: #fff; }
+  .btn-export:hover { filter: brightness(1.08); }
 
   /* NOTA manual */
-  .nota-manual { font-size: 10px; color: #F39C12; font-weight: 600; margin-left: 6px; }
-  .empty-state { text-align: center; padding: 60px 20px; color: #AAA; }
+  .nota-manual { font-size: 10px; color: var(--warn); font-weight: 600; margin-left: 6px; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-faint); }
   .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
   .empty-state p { font-size: 14px; }
 
   /* INSTALACIÓN */
-  .inst-header { display: grid; grid-template-columns: 2.5fr 1.2fr 0.8fr 1.2fr 1.1fr 40px; gap: 8px; padding: 8px 12px; background: #2D3A2D; border-radius: 8px 8px 0 0; }
-  .inst-header span { color: #B8E6B8; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; }
-  .inst-row { display: grid; grid-template-columns: 2.5fr 1.2fr 0.8fr 1.2fr 1.1fr 40px; gap: 8px; padding: 8px 12px; background: #F8FFF8; border-bottom: 1px solid #E0EEE0; align-items: center; }
-  .inst-row:nth-child(even) { background: white; }
+  .inst-header { display: grid; grid-template-columns: 2.5fr 1.2fr 0.8fr 1.2fr 1.1fr 40px; gap: 8px; padding: 9px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm) var(--r-sm) 0 0; }
+  .inst-header span { color: var(--ink-soft); font-size: 10px; font-weight: 600; letter-spacing: .3px; }
+  .inst-row { display: grid; grid-template-columns: 2.5fr 1.2fr 0.8fr 1.2fr 1.1fr 40px; gap: 8px; padding: 8px 12px; background: var(--surface); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); align-items: center; }
+  .inst-row:nth-child(even) { background: var(--surface-2); }
   .inst-row input, .inst-row select { padding: 7px 10px; font-size: 12px; }
-  .inst-row .total-cell { font-size: 12px; font-weight: 600; color: #2D3A2D; text-align: right; }
-  .inst-badge { background: #D4EDDA; color: #155724; font-size: 9px; padding: 2px 7px; border-radius: 10px; font-weight: 700; margin-left: 6px; }
-  .inst-hb-badge { background: #FFF3CD; color: #856404; font-size: 9px; padding: 2px 7px; border-radius: 10px; font-weight: 700; margin-left: 4px; display:none; }
-  .no-inst-notice { background: #FFF3CD; border: 1px solid #FFD700; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #856404; margin-top: 10px; display: none; }
+  .inst-row .total-cell { font-family: var(--font-brand); font-size: 12px; font-weight: 700; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+  .inst-badge { background: var(--ok-tint); color: var(--ok); font-size: 9px; padding: 2px 7px; border-radius: var(--r-pill); font-weight: 700; margin-left: 6px; }
+  .inst-hb-badge { background: var(--warn-tint); color: var(--warn); font-size: 9px; padding: 2px 7px; border-radius: var(--r-pill); font-weight: 700; margin-left: 4px; display:none; }
+  .no-inst-notice { background: var(--warn-tint); border: 1px solid var(--warn); border-radius: var(--r-sm); padding: 10px 14px; font-size: 12px; color: var(--warn); margin-top: 10px; display: none; }
   .no-inst-notice strong { font-weight: 700; }
 
 /* ═══════════════════ RESPONSIVE MÓVIL ═══════════════════ */
@@ -338,7 +380,14 @@
 
 <div id="debug-bar" style="display:none;background:#e74c3c;color:white;padding:10px 20px;font-size:13px;font-weight:600;position:fixed;top:0;left:0;right:0;z-index:9999"></div>
 <nav>
-  <div class="brand">TECNOELEMENTOS</div>
+  <div class="brand">
+    <svg class="chip" viewBox="379 379 322 322" xmlns="http://www.w3.org/2000/svg" aria-label="Tecnoelementos">
+      <rect x="379" y="379" width="322" height="322" fill="var(--brand)"/>
+      <path fill="var(--brand-ink)" d="M554.34,559.05h-28.58V435.33h-38.1v-28.58h104.67v28.58h-37.99V559.05z"/>
+      <path fill="var(--brand-ink)" d="M388.06,387.42v303.87h303.87V387.42H388.06z M529.8,673.2h-89.05v-8.34h89.05V673.2z M529.8,633.3h-89.05v-8.34h89.05V633.3z M529.8,593.41h-89.05v-8.34h89.05V593.41z M559.46,673.66h-8.34v-89.05h8.34V673.66z M599.35,673.66h-8.34v-89.05h8.34V673.66z M639.25,673.66h-8.34v-89.05h8.34V673.66z M686.5,570.13H393.5V392.85H686.5V570.13z"/>
+    </svg>
+    <span class="wm"><b>TECNO</b><em>ELEMENTOS</em></span>
+  </div>
   <div class="tabs">
     <div class="tab active" onclick="showPage('nueva')">+ Nueva Cotización</div>
     <div class="tab" onclick="showPage('crm')">📊 CRM / Historial</div>
@@ -364,11 +413,12 @@
             top:100%;
             left:0;
             right:0;
-            background:white;
-            border:1px solid #ddd;
+            background:var(--surface);
+            color:var(--ink);
+            border:1px solid var(--line);
             border-radius:0 0 6px 6px;
-            box-shadow:0 4px 12px rgba(0,0,0,0.15);
-            z-index:9999;
+            box-shadow:0 4px 12px rgba(51,51,51,0.15);
+            z-index:var(--z-dropdown);
             max-height:200px;
             overflow-y:auto;
           "></div>
@@ -433,7 +483,7 @@
         <label>Tipo de Cambio (USD→MXN)</label>
         <div style="display:flex;gap:8px;align-items:center;">
           <input type="number" id="tipo-cambio" value="17.50" step="0.01" oninput="recalcular()" style="flex:1;">
-          <button onclick="actualizarTC()" id="btn-tc" title="Actualizar TC (exchangerate-api +$0.15)" style="background:#2d6a4f;color:#fff;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;font-size:13px;white-space:nowrap;">🔄 TC</button>
+          <button onclick="actualizarTC()" id="btn-tc" title="Actualizar TC (exchangerate-api +$0.15)" class="btn btn-dark btn-sm" style="white-space:nowrap;">🔄 TC</button>
         </div>
       </div>
     </div>
@@ -459,13 +509,13 @@
     <div id="productos-body"></div>
     <div style="margin-top:12px">
       <button class="btn btn-outline btn-sm" onclick="agregarProducto()">+ Del catálogo</button>
-      <button class="btn btn-sm" style="background:#FFF3CD;color:#856404;border:1.5px solid #F39C12;margin-left:8px" onclick="agregarManual()">✏️ Producto manual</button>
+      <button class="btn btn-outline btn-sm" style="margin-left:8px" onclick="agregarManual()">✏️ Producto manual</button>
     </div>
 
   </div>
 
   <div class="card">
-    <h2>Servicios de Instalación <span style="font-size:11px;font-weight:400;color:#888;text-transform:none;letter-spacing:0">(opcional)</span></h2>
+    <h2>Servicios de Instalación <span style="font-size:11px;font-weight:400;color:var(--ink-faint);text-transform:none;letter-spacing:0">(opcional)</span></h2>
     <div id="no-inst-notice" class="no-inst-notice">
       ⚠️ <strong>Sin instalación:</strong> Se agregará automáticamente en Términos y Condiciones: <em>"No incluye instalación."</em>
     </div>
@@ -479,7 +529,7 @@
     </div>
     <div id="inst-body"></div>
     <div style="margin-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-      <button class="btn btn-sm" style="background:#D4EDDA;color:#155724;border:1.5px solid #27ae60" onclick="agregarInstalacion()">🔧 Agregar servicio de instalación</button>
+      <button class="btn btn-outline btn-sm" onclick="agregarInstalacion()">🔧 Agregar servicio de instalación</button>
     </div>
   </div>
 
@@ -488,50 +538,50 @@
       <div class="totales-row" style="align-items:center;">
         <span>Subtotal productos</span>
         <span style="display:flex;align-items:center;gap:8px;">
-          <span id="t-margen-global" style="font-size:10px;font-weight:700;color:#888;font-style:italic;" title="Margen promedio sobre venta">—</span>
+          <span id="t-margen-global" style="font-size:10px;font-weight:700;color:var(--ink-faint);font-style:italic;" title="Margen promedio sobre venta">—</span>
           <span id="t-subtotal">$0.00</span>
         </span>
       </div>
       <div class="totales-row" id="row-flete-monto" style="display:none"><span>Flete</span><span id="t-flete-val">$0.00</span></div>
-      <div class="totales-row" id="row-flete" style="display:none;color:#27ae60"><span>✓ Flete incluido</span><span style="font-size:11px">Sin cargo</span></div>
+      <div class="totales-row" id="row-flete" style="display:none;color:var(--ok)"><span>✓ Flete incluido</span><span style="font-size:11px">Sin cargo</span></div>
       <div class="totales-row">
         <span style="display:flex;align-items:center;gap:8px;">
           IVA productos
-          <select id="prod-iva" onchange="recalcularTotalesGlobales()" style="background:#2a2a2a;color:#aaa;border:1px solid #555;border-radius:5px;padding:2px 6px;font-size:11px;font-weight:600;">
+          <select id="prod-iva" onchange="recalcularTotalesGlobales()" class="mini-select">
             <option value="con" selected>Con IVA 16%</option>
             <option value="sin">Sin IVA</option>
           </select>
         </span>
         <span id="t-iva">$0.00</span>
       </div>
-      <div class="totales-row" id="row-inst-sub" style="display:none;color:#7EC87E"><span>🔧 Mano de obra</span><span id="t-inst-sub">$0.00</span></div>
+      <div class="totales-row" id="row-inst-sub" style="display:none;color:var(--ok)"><span>🔧 Mano de obra</span><span id="t-inst-sub">$0.00</span></div>
       <div class="totales-row" id="row-inst-iva" style="display:none">
-        <span style="display:flex;align-items:center;gap:8px;color:#7EC87E">
+        <span style="display:flex;align-items:center;gap:8px;color:var(--ok)">
           IVA mano de obra
-          <select id="inst-iva" onchange="recalcularTotalesGlobales()" style="background:#2a2a2a;color:#7EC87E;border:1px solid #3d5a3d;border-radius:5px;padding:2px 6px;font-size:11px;font-weight:600;">
+          <select id="inst-iva" onchange="recalcularTotalesGlobales()" class="mini-select">
             <option value="sin">Sin IVA</option>
             <option value="con">Con IVA 16%</option>
           </select>
         </span>
-        <span id="t-inst-iva-val" style="color:#7EC87E">—</span>
+        <span id="t-inst-iva-val" style="color:var(--ok)">—</span>
       </div>
-      <div class="totales-row" id="row-descuento" style="display:none;color:#E8C96B;">
+      <div class="totales-row" id="row-descuento" style="display:none;color:var(--warn);">
         <span style="display:flex;align-items:center;gap:8px;">
           🏷️ Descuento
           <input type="number" id="descuento-pct" min="0" max="100" step="0.5" value="0"
             oninput="recalcularTotalesGlobales()"
-            style="width:52px;background:#2a2a2a;color:#E8C96B;border:1px solid #b8860b;border-radius:5px;padding:2px 6px;font-size:11px;font-weight:600;text-align:center;">
-          <span style="font-size:11px;color:#E8C96B;">%</span>
+            class="mini-input">
+          <span style="font-size:11px;color:var(--warn);">%</span>
         </span>
-        <span id="t-descuento-val" style="color:#E8C96B;">—</span>
+        <span id="t-descuento-val" style="color:var(--warn);">—</span>
       </div>
-      <div class="totales-row" style="border-top:1px solid #444;padding-top:8px;margin-top:4px;"><span>TOTAL GENERAL</span><span id="t-total">$0.00</span></div>
+      <div class="totales-row" style="border-top:1px solid var(--line);padding-top:8px;margin-top:4px;"><span>TOTAL GENERAL</span><span id="t-total">$0.00</span></div>
     </div>
   </div>
 
   <div class="btn-actions">
     <button class="btn btn-outline" onclick="limpiarFormulario()">🗑 Limpiar</button>
-      <button class="btn btn-outline" onclick="toggleDescuento()" id="btn-descuento" style="border-color:#b8860b;color:#E8C96B;">🏷️ Descuento</button>
+      <button class="btn btn-outline" onclick="toggleDescuento()" id="btn-descuento">🏷️ Descuento</button>
     <button class="btn btn-dark" onclick="generarPDF()">📄 Generar PDF</button>
     <button class="btn btn-green" onclick="guardarCotizacion()">💾 Guardar en CRM</button>
       <button class="btn btn-outline" onclick="guardarBorrador()" style="border-color:#b8860b;color:#b8860b;">📝 Borrador</button>
@@ -556,7 +606,7 @@
     </div>
     <div class="search-bar">
       <input type="text" id="search-input" placeholder="🔍  Buscar por cliente, folio, producto..." oninput="filtrarCRM()">
-      <button onclick="sincronizarSheets()" id="btn-sync" style="background:#1a73e8;color:white;border:none;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">☁️ Sincronizar</button>
+      <button onclick="sincronizarSheets()" id="btn-sync" class="btn btn-dark btn-sm">☁️ Sincronizar</button>
       <select id="filter-status" onchange="filtrarCRM()">
         <option value="">Todos los estatus</option>
         <option value="Pendiente">Pendiente</option>
