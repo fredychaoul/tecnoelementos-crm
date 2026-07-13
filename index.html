@@ -2426,40 +2426,40 @@ async function generarPDF(cotData) {
 
   // ══ OBSERVACIONES (después del total) ══
   if (datos.observaciones) {
-    y += 8;
-    if (y > 250) { doc.addPage(); y = 20; }
+    y += 5;
+    if (y > 252) { doc.addPage(); y = 20; }
     doc.setDrawColor(220,222,228); doc.setLineWidth(0.4); doc.line(mg, y, pw-mg, y);
-    y += 4;
+    y += 3.6;
     doc.setTextColor(95,100,109); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
     doc.text('OBSERVACIONES', mg, y);
-    y += 4;
-    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(80,80,80);
+    y += 3.6;
+    doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(80,80,80);
     const obsLines = doc.splitTextToSize(datos.observaciones, pw-mg*2);
     doc.text(obsLines, mg, y);
-    y += obsLines.length * 4;
+    y += obsLines.length * 3.5;
   }
 
   // ══ CONDICIONES COMERCIALES + TÉRMINOS Y CONDICIONES ══
-  y += 6;
-  if (y > 240) { doc.addPage(); y = 20; }
+  // Corte limpio: si no cabe el bloque completo en la hoja, pasa entero a la siguiente.
+  y += 4;
+  if (y > 252) { doc.addPage(); y = 20; }
   doc.setDrawColor(220,222,228); doc.setLineWidth(0.4); doc.line(mg, y, pw-mg, y);
-  y += 5;
+  y += 4.2;
   doc.setTextColor(95,100,109); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
   doc.text('CONDICIONES COMERCIALES', mg, y);
-  y += 4;
+  y += 3.5;
   // Cláusula de vigencia (aplica a todas; no menciona tipo de cambio)
-  doc.setFillColor(242,245,252); doc.roundedRect(mg, y, pw-mg*2, 9, 1, 1, 'F');
-  doc.setDrawColor(219,224,236); doc.setLineWidth(0.3); doc.roundedRect(mg, y, pw-mg*2, 9, 1, 1, 'S');
-  doc.setFont('helvetica','italic'); doc.setFontSize(6.5); doc.setTextColor(80,84,92);
-  doc.text('Los precios de esta cotización son válidos hasta la fecha indicada. Transcurrida esa fecha, quedan sujetos a revisión y confirmación al momento del pedido.', mg + 3, y + 3.5, { maxWidth: pw - mg*2 - 6 });
+  doc.setFillColor(242,245,252); doc.roundedRect(mg, y, pw-mg*2, 7.5, 1, 1, 'F');
+  doc.setDrawColor(219,224,236); doc.setLineWidth(0.3); doc.roundedRect(mg, y, pw-mg*2, 7.5, 1, 1, 'S');
+  doc.setFont('helvetica','italic'); doc.setFontSize(6.3); doc.setTextColor(80,84,92);
+  doc.text('Los precios de esta cotización son válidos hasta la fecha indicada. Transcurrida esa fecha, quedan sujetos a revisión y confirmación al momento del pedido.', mg + 3, y + 3, { maxWidth: pw - mg*2 - 6 });
   doc.setTextColor(51,51,51); doc.setFont('helvetica','normal');
-  y += 13;
+  y += 10;
 
   // ── Términos y condiciones
-  if (y > 240) { doc.addPage(); y = 20; }
   doc.setTextColor(95,100,109); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
   doc.text('TÉRMINOS Y CONDICIONES', mg, y);
-  y += 2;
+  y += 1.5;
 
   const conInst = (datos.instalacion || []).length > 0;
   const conNivel = (datos.instalacion || []).some(s => s.clave && s.clave.startsWith('ANV-'));
@@ -2477,13 +2477,13 @@ async function generarPDF(cotData) {
   if (!conNivel) terminosBase.push('• Si se requiere nivelación o preparación de subpiso, se elaborará un presupuesto adicional.');
   if (!conInst)  terminosBase.push('• No incluye instalación ni mano de obra.');
 
-  doc.setFont('helvetica','normal'); doc.setFontSize(6.2); doc.setTextColor(110,110,110);
+  doc.setFont('helvetica','normal'); doc.setFontSize(5.9); doc.setTextColor(110,110,110);
   terminosBase.forEach(t => {
-    y += 4;
-    if (y > 270) { doc.addPage(); y = 20; }
+    y += 3.5;
+    if (y > 272) { doc.addPage(); y = 20; }
     const lines = doc.splitTextToSize(t, pw-mg*2);
     doc.text(lines, mg, y);
-    y += (lines.length - 1) * 3.5;
+    y += (lines.length - 1) * 3.1;
   });
 
   // ── Pie de página (carboncillo)
