@@ -2072,8 +2072,8 @@ async function generarPDF(cotData) {
   doc.setFillColor(255,255,255);
   doc.rect(0, 0, pw, ph, 'F');
 
-  // ── Barra superior negra
-  doc.setFillColor(26,26,26);
+  // ── Barra superior carboncillo (#333)
+  doc.setFillColor(51,51,51);
   doc.rect(0, 0, pw, 28, 'F');
 
   // ── Logo TECNOELEMENTOS (2000x165px, proporción 12.12:1)
@@ -2101,25 +2101,36 @@ async function generarPDF(cotData) {
   // Etiqueta CLIENTE
   doc.setTextColor(130,130,130); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
   doc.text('CLIENTE', mg, y);
+  let cy = y + 6;
   // Nombre cliente
-  doc.setTextColor(26,26,26); doc.setFont('helvetica','bold'); doc.setFontSize(11);
-  doc.text(datos.cliente || '—', mg, y+6);
+  doc.setTextColor(51,51,51); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text(datos.cliente || '—', mg, cy);
+  cy += 5;
+  // Atención (contacto) — antes se capturaba pero no se imprimía
+  if (datos.contacto) {
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(90,90,90);
+    doc.text('Atención: ' + datos.contacto, mg, cy);
+    cy += 5;
+  }
   // Ciudad
   if (datos.ciudad) {
     doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(90,90,90);
-    doc.text(datos.ciudad, mg, y+12);
+    doc.text(datos.ciudad, mg, cy);
+    cy += 5;
   }
   // Dirección
   if (datos.direccion) {
     doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(110,110,110);
-    doc.text(datos.direccion, mg, y+18, {maxWidth: 90});
+    doc.text(datos.direccion, mg, cy, {maxWidth: 90});
+    cy += 6;
   }
   // Proyecto
   if (datos.proyecto) {
     doc.setTextColor(110,110,110); doc.setFontSize(6.5); doc.setFont('helvetica','bold');
-    doc.text('PROYECTO', mg, y+25);
-    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(26,26,26);
-    doc.text(datos.proyecto, mg, y+31);
+    doc.text('PROYECTO', mg, cy);
+    cy += 5;
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(51,51,51);
+    doc.text(datos.proyecto, mg, cy);
   }
 
   // ── Info derecha: FECHA / VÁLIDA HASTA / MONEDA
@@ -2147,8 +2158,8 @@ async function generarPDF(cotData) {
 
   // ── Línea divisoria doble
   y = 73;
-  doc.setDrawColor(26,26,26); doc.setLineWidth(1.5); doc.line(mg, y, pw-mg, y);
-  doc.setDrawColor(120,120,120); doc.setLineWidth(0.3); doc.line(mg, y+2, pw-mg, y+2);
+  doc.setDrawColor(51,51,51); doc.setLineWidth(1.5); doc.line(mg, y, pw-mg, y);
+  doc.setDrawColor(150,152,158); doc.setLineWidth(0.3); doc.line(mg, y+2, pw-mg, y+2);
 
   // ── Tabla: 7 columnas
   // Área útil 182mm: PRODUCTO(35) CLAVE(26) FORMATO(47) CANT(14) UNIDAD(16) P.UNIT(22) TOTAL(22)
@@ -2156,9 +2167,9 @@ async function generarPDF(cotData) {
   y = 83;
   const cols = [mg, mg+36, mg+54, mg+96, mg+110, mg+124, mg+152, pw-mg];
   const heads = ['PRODUCTO','CLAVE','FORMATO / ESPECIFICACIÓN','CANT.','ENTREGA','P.UNIT.','TOTAL'];
-  doc.setFillColor(26,26,26);
+  doc.setFillColor(51,51,51);
   doc.rect(mg, y-6.5, pw-mg*2, 8.5, 'F');
-  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+  doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
   heads.forEach((h, i) => {
     const isNum = i >= 3;
     const cx = (cols[i]+cols[i+1])/2;
@@ -2223,15 +2234,13 @@ async function generarPDF(cotData) {
     // ENTREGA — cajas, ML o unidad según tipo
     doc.setFontSize(7);
     const entregaStr = (cajasStr !== '—') ? cajasStr : p.unidad;
-    if (esMoldura) {
-      doc.setTextColor(50, 80, 130);      // azul para ML
-    } else if (cajasNum) {
-      doc.setTextColor(30, 80, 50);       // verde para cajas
+    if (esMoldura || cajasNum) {
+      doc.setTextColor(51, 51, 51);       // ML o cajas → carboncillo (monocromo)
     } else {
-      doc.setTextColor(80, 80, 80);       // gris para unidad simple
+      doc.setTextColor(110, 110, 110);    // unidad simple → gris
     }
     doc.text(entregaStr, (cols[4]+cols[5])/2, ty, {align:'center'});
-    doc.setTextColor(26,26,26); doc.setFontSize(7.5);
+    doc.setTextColor(51,51,51); doc.setFontSize(7.5);
 
     // P.UNIT derecha
     const pvpRound  = Math.round(p.pvp_final * 100) / 100;
@@ -2259,38 +2268,20 @@ async function generarPDF(cotData) {
 
 
 
-  // ── Cláusula tipo de cambio (solo en cotizaciones MXN)
-  if (datos.moneda === 'MXN') {
-    y += 3;
-    if (y > 215) { doc.addPage(); y = 20; }
-    doc.setFont('helvetica','italic'); doc.setFontSize(6.5); doc.setTextColor(140,100,40);
-    doc.setFillColor(255,249,235); doc.roundedRect(mg, y, pw-mg*2, 12, 1, 1, 'F');
-    doc.setDrawColor(200,160,60); doc.setLineWidth(0.3); doc.roundedRect(mg, y, pw-mg*2, 12, 1, 1, 'S');
-    doc.text(
-      'Los precios expresados en pesos mexicanos (MXN) están referenciados al tipo de cambio del dólar americano (USD) vigente al momento de la cotización. Tecnoelementos se reserva el derecho de ajustar los precios sin previo aviso ante variaciones en el tipo de cambio.',
-      mg + 3, y + 4.5,
-      { maxWidth: pw - mg*2 - 6 }
-    );
-    doc.setTextColor(26,26,26); doc.setFont('helvetica','normal');
-    y += 15;
-  }
-
-  // ── Totales
-  y += 4;
-  // ── Servicios de instalación (ANTES de los totales)
+  // ══ SERVICIOS DE INSTALACIÓN (pegados a productos, sin interrupción) ══
   const instServicios = datos.instalacion || [];
   if (instServicios.length > 0) {
-    y += 4;
-    if (y > 215) { doc.addPage(); y = 20; }
-    doc.setDrawColor(220,220,220); doc.setLineWidth(0.4); doc.line(mg, y, pw-mg, y);
     y += 6;
-    doc.setTextColor(45,100,45); doc.setFont('helvetica','bold'); doc.setFontSize(7);
+    if (y > 215) { doc.addPage(); y = 20; }
+    doc.setDrawColor(220,222,228); doc.setLineWidth(0.4); doc.line(mg, y, pw-mg, y);
+    y += 6;
+    doc.setTextColor(51,51,51); doc.setFont('helvetica','bold'); doc.setFontSize(7);
     doc.text('SERVICIOS DE INSTALACIÓN', mg, y);
     y += 4;
-    // Mini header verde
-    doc.setFillColor(45,100,45);
+    // Mini header carboncillo (monocromo)
+    doc.setFillColor(51,51,51);
     doc.rect(mg, y, pw-mg*2, 6.5, 'F');
-    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+    doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
     doc.text('SERVICIO', mg+2, y+4.5);
     doc.text('CANT.', mg+110, y+4.5, {align:'center'});
     doc.text('UNIDAD', mg+132, y+4.5, {align:'center'});
@@ -2299,10 +2290,10 @@ async function generarPDF(cotData) {
     y += 5.5;
     instServicios.forEach((s, idx) => {
       const rh = 6.5;
-      doc.setFillColor(idx%2===0 ? 240:255, idx%2===0 ? 248:255, idx%2===0 ? 240:255);
+      doc.setFillColor(idx%2===0 ? 242:255, idx%2===0 ? 245:255, idx%2===0 ? 252:255);
       doc.rect(mg, y, pw-mg*2, rh, 'F');
       const ty2 = y + 4.5;
-      doc.setTextColor(26,26,26); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+      doc.setTextColor(51,51,51); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
       doc.text(s.nombre, mg+2, ty2, {maxWidth:104});
       doc.setFont('helvetica','normal'); doc.setFontSize(6.5);
       doc.text(Number(s.cantidad).toFixed(2), mg+110, ty2, {align:'center'});
@@ -2310,50 +2301,36 @@ async function generarPDF(cotData) {
       doc.text('$'+Number(s.precio_unit).toLocaleString('es-MX',{minimumFractionDigits:2}), mg+156, ty2, {align:'right'});
       doc.setFont('helvetica','bold');
       doc.text('$'+Number(s.total).toLocaleString('es-MX',{minimumFractionDigits:2}), pw-mg-2, ty2, {align:'right'});
-      doc.setDrawColor(215,235,215); doc.setLineWidth(0.2);
+      doc.setDrawColor(224,227,234); doc.setLineWidth(0.2);
       doc.line(mg, y+rh, pw-mg, y+rh);
       y += rh;
     });
     y += 3;
   }
 
-  // ── Observaciones
-  if (datos.observaciones) {
-    y += 4;
-    doc.setDrawColor(220,220,220); doc.setLineWidth(0.4); doc.line(mg, y, pw-mg, y);
-    y += 4;
-    doc.setTextColor(100,100,100); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
-    doc.text('OBSERVACIONES', mg, y);
-    y += 4;
-    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(80,80,80);
-    const obsLines = doc.splitTextToSize(datos.observaciones, pw-mg*2);
-    doc.text(obsLines, mg, y);
-    y += obsLines.length * 4;
-  }
-
+  // ══ BLOQUE DE TOTALES (monocromo, justo tras los renglones) ══
   y += 4;
-
-  // ── BLOQUE DE TOTALES (al final, antes de T&C)
+  if (y > 235) { doc.addPage(); y = 20; }
   const tx = pw - 84, tw = 72;
 
   // SUBTOTAL productos
-  doc.setFillColor(45,45,45); doc.rect(tx, y, tw, 6, 'F');
-  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+  doc.setFillColor(74,74,78); doc.rect(tx, y, tw, 6, 'F');
+  doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
   doc.text('SUBTOTAL PRODUCTOS', tx+4, y+4);
   doc.text(simbolo + datos.subtotal.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), tx+tw-4, y+4, {align:'right'});
   y += 6;
 
   // FLETE — 3 escenarios
   if (datos.flete_escenario === 'incluido') {
-    doc.setFillColor(55,55,55); doc.rect(tx, y, tw, 6, 'F');
-    doc.setTextColor(190,220,190); doc.setFont('helvetica','bold'); doc.setFontSize(7);
+    doc.setFillColor(74,74,78); doc.rect(tx, y, tw, 6, 'F');
+    doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(7);
     doc.text('FLETE INCLUIDO', tx+4, y+4);
-    doc.setTextColor(130,200,130); doc.setFont('helvetica','normal'); doc.setFontSize(7);
+    doc.setFont('helvetica','normal');
     doc.text('Sin cargo adicional', tx+tw-4, y+4, {align:'right'});
     y += 6;
   } else if (datos.flete_escenario === 'cobrado' && datos.flete_monto > 0) {
-    doc.setFillColor(45,45,45); doc.rect(tx, y, tw, 6, 'F');
-    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+    doc.setFillColor(74,74,78); doc.rect(tx, y, tw, 6, 'F');
+    doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
     doc.text('FLETE', tx+4, y+4);
     doc.text(simbolo + datos.flete_monto.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), tx+tw-4, y+4, {align:'right'});
     y += 6;
@@ -2363,16 +2340,16 @@ async function generarPDF(cotData) {
   if (datos.descuento_pct && datos.descuento_pct > 0) {
     const descBase = datos.subtotal + (datos.flete_escenario==='cobrado' ? datos.flete_monto : 0);
     const descMontoPDF = descBase * (datos.descuento_pct / 100);
-    doc.setFillColor(80,65,10); doc.rect(tx, y, tw, 6, 'F');
-    doc.setTextColor(240,210,80); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+    doc.setFillColor(74,74,78); doc.rect(tx, y, tw, 6, 'F');
+    doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
     doc.text('DESCUENTO ' + datos.descuento_pct + '%', tx+4, y+4);
     doc.text('-' + simbolo + descMontoPDF.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), tx+tw-4, y+4, {align:'right'});
     y += 6;
   }
 
   // IVA 16% productos
-  doc.setFillColor(45,45,45); doc.rect(tx, y, tw, 6, 'F');
-  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+  doc.setFillColor(74,74,78); doc.rect(tx, y, tw, 6, 'F');
+  doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
   const conIvaProdPDF = document.getElementById('prod-iva')?.value !== 'sin';
   doc.text(conIvaProdPDF ? 'IVA 16%' : 'Sin IVA', tx+4, y+4);
   doc.text(simbolo + datos.iva.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), tx+tw-4, y+4, {align:'right'});
@@ -2384,27 +2361,57 @@ async function generarPDF(cotData) {
   const conIvaPDF  = datos.inst_con_iva || false;
   const ivaInstPDF = conIvaPDF ? subInstPDF * 0.16 : 0;
   if (subInstPDF > 0) {
-    doc.setFillColor(55,110,55); doc.rect(tx, y, tw, 6, 'F');
-    doc.setTextColor(200,240,200); doc.setFont('helvetica','bold'); doc.setFontSize(7);
+    doc.setFillColor(74,74,78); doc.rect(tx, y, tw, 6, 'F');
+    doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(7);
     doc.text('MANO DE OBRA' + (conIvaPDF ? ' + IVA' : ' s/IVA'), tx+4, y+4);
     doc.text('$'+(subInstPDF+ivaInstPDF).toLocaleString('es-MX',{minimumFractionDigits:2}), tx+tw-4, y+4, {align:'right'});
     y += 6;
   }
 
-  // TOTAL GENERAL
+  // TOTAL GENERAL (carboncillo + código de moneda)
   const totalPDF = datos.total;
-  doc.setFillColor(26,26,26); doc.rect(tx, y, tw, 8, 'F');
-  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  let totalStr = simbolo + totalPDF.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if (datos.moneda === 'MXN') totalStr += ' MXN';
+  doc.setFillColor(51,51,51); doc.rect(tx, y, tw, 8, 'F');
+  doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(9);
   doc.text('TOTAL GENERAL', tx+4, y+5.5);
-  doc.text(simbolo + totalPDF.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}), tx+tw-4, y+5.5, {align:'right'});
+  doc.text(totalStr, tx+tw-4, y+5.5, {align:'right'});
   y += 8;
 
-  // ── Términos y condiciones
+  // ══ OBSERVACIONES (después del total) ══
+  if (datos.observaciones) {
+    y += 8;
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.setDrawColor(220,222,228); doc.setLineWidth(0.4); doc.line(mg, y, pw-mg, y);
+    y += 4;
+    doc.setTextColor(95,100,109); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+    doc.text('OBSERVACIONES', mg, y);
+    y += 4;
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(80,80,80);
+    const obsLines = doc.splitTextToSize(datos.observaciones, pw-mg*2);
+    doc.text(obsLines, mg, y);
+    y += obsLines.length * 4;
+  }
+
+  // ══ CONDICIONES COMERCIALES + TÉRMINOS Y CONDICIONES ══
   y += 6;
-  if (y > 230) { doc.addPage(); y = 20; }
-  doc.setDrawColor(220,220,220); doc.setLineWidth(0.4); doc.line(mg, y, pw-mg, y);
+  if (y > 240) { doc.addPage(); y = 20; }
+  doc.setDrawColor(220,222,228); doc.setLineWidth(0.4); doc.line(mg, y, pw-mg, y);
   y += 5;
-  doc.setTextColor(100,100,100); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+  doc.setTextColor(95,100,109); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+  doc.text('CONDICIONES COMERCIALES', mg, y);
+  y += 4;
+  // Cláusula de vigencia (aplica a todas; no menciona tipo de cambio)
+  doc.setFillColor(242,245,252); doc.roundedRect(mg, y, pw-mg*2, 9, 1, 1, 'F');
+  doc.setDrawColor(219,224,236); doc.setLineWidth(0.3); doc.roundedRect(mg, y, pw-mg*2, 9, 1, 1, 'S');
+  doc.setFont('helvetica','italic'); doc.setFontSize(6.5); doc.setTextColor(80,84,92);
+  doc.text('Los precios de esta cotización son válidos hasta la fecha indicada. Transcurrida esa fecha, quedan sujetos a revisión y confirmación al momento del pedido.', mg + 3, y + 3.5, { maxWidth: pw - mg*2 - 6 });
+  doc.setTextColor(51,51,51); doc.setFont('helvetica','normal');
+  y += 13;
+
+  // ── Términos y condiciones
+  if (y > 240) { doc.addPage(); y = 20; }
+  doc.setTextColor(95,100,109); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
   doc.text('TÉRMINOS Y CONDICIONES', mg, y);
   y += 2;
 
@@ -2433,11 +2440,11 @@ async function generarPDF(cotData) {
     y += (lines.length - 1) * 3.5;
   });
 
-  // ── Pie de página
-  doc.setFillColor(26,26,26); doc.rect(0, ph-20, pw, 20, 'F');
-  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
+  // ── Pie de página (carboncillo)
+  doc.setFillColor(51,51,51); doc.rect(0, ph-20, pw, 20, 'F');
+  doc.setTextColor(242,245,252); doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
   doc.text('TECNOELEMENTOS  |  Tel: 55 5509 6659', pw/2, ph-12, {align:'center'});
-  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(170,170,170);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(180,183,190);
   doc.text('Pisos de Madera de Ingeniería  ·  Pisos SPC  ·  Cerámicos Decorativos  ·  Deck', pw/2, ph-6, {align:'center'});
 
   const nombreCliente = datos.cliente.replace(/\s+/g,'-');
