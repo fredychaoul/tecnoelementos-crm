@@ -1055,9 +1055,9 @@ const PRODUCTOS = [
   { linea:'BODEN',      modelo:'WALLCORE — Smokey Brown',       clave:'ZBODW432281524-7', formato:'22.8×1.524m | SPC 4mm | Panel mural', pvp:27.67,  costo:17.9846, unidad:'M2', caja:2.432},
   { linea:'BODEN',      modelo:'WALLCORE — Vulcanic Thermo',    clave:'ZBODW432281524-12', formato:'22.8×1.524m | SPC 4mm | Panel mural', pvp:27.67,  costo:17.9846, unidad:'M2', caja:2.432},
   // ── BODEN - STONE (colección look-piedra · ficha técnica 2026) ─
-  // Costo 26 USD/m² neto (provisional, dado por el usuario); PVP = costo/0.65 (margen BODEN). Caja 3 pzas = 2.16 m². Falta lista real + descuentos para la OC.
-  { linea:'BODEN',      modelo:'STONE — Alpi Bianca',          clave:'ZBOD2306H-02', formato:'60 cm × 1.20 m | 7 mm total (5.5 mm SPC + 1.5 mm IXPE) | Stone (click)', pvp:40.00, costo:26, unidad:'M2', caja:2.16 },
-  { linea:'BODEN',      modelo:'STONE — Sabbia',               clave:'ZBOD2306H-12', formato:'60 cm × 1.20 m | 7 mm total (5.5 mm SPC + 1.5 mm IXPE) | Stone (click)', pvp:40.00, costo:26, unidad:'M2', caja:2.16 },
+  // Lista 51.70 USD/m² + IVA, desc 40/10/12 → costo neto 24.5678/m²; PVP = costo/0.65 (margen BODEN). Caja 3 pzas = 2.16 m². OC cableada (BODEN_STONE).
+  { linea:'BODEN',      modelo:'STONE — Alpi Bianca',          clave:'ZBOD2306H-02', formato:'60 cm × 1.20 m | 7 mm total (5.5 mm SPC + 1.5 mm IXPE) | Stone (click)', pvp:37.80, costo:24.5678, unidad:'M2', caja:2.16 },
+  { linea:'BODEN',      modelo:'STONE — Sabbia',               clave:'ZBOD2306H-12', formato:'60 cm × 1.20 m | 7 mm total (5.5 mm SPC + 1.5 mm IXPE) | Stone (click)', pvp:37.80, costo:24.5678, unidad:'M2', caja:2.16 },
   // ── BODEN - MOLDURAS (código real por color — Lista No.08) ─
   // Precio de lista por pieza, se venden de 2.40ml
   // Lavish
@@ -3416,6 +3416,7 @@ function ocLineaKey(cat) {
     if (L === 'BODEN SPLASH')  return 'BODEN_SPLASH';
     if (m.includes('HBONE') || m.includes('HERRINGBONE')) return 'BODEN_HBONE';
     if (m.includes('WALLCORE')) return 'BODEN_WALLCORE';
+    if (m.includes('STONE')) return 'BODEN_STONE';
     return 'BODEN_TRIBECA';
   }
   if (prov === 'CAPPA') {
@@ -3443,7 +3444,7 @@ function ocLineaKey(cat) {
 
 // Descuentos en cascada (fracciones) por línea.
 const OC_DESCUENTOS = {
-  BODEN_TRIBECA:[0.40,0.10,0.12], BODEN_HBONE:[0.40,0.10,0.12], BODEN_WALLCORE:[0.40,0.10,0.12],
+  BODEN_TRIBECA:[0.40,0.10,0.12], BODEN_HBONE:[0.40,0.10,0.12], BODEN_WALLCORE:[0.40,0.10,0.12], BODEN_STONE:[0.40,0.10,0.12],
   BODEN_MOLDURA:[0.40,0.10,0.08], BODEN_SPLASH:[0.40,0.10],
   CAPPA_ALPES19:[0.40,0.10,0.13], CAPPA_ALPES24:[0.40,0.10,0.15],
   CAPPA_LIGNUM:[0.40,0.10,0.10], CAPPA_TERRA:[0.40,0.10,0.10], CAPPA_WALNUTS:[0.40,0.10,0.10],
@@ -3462,6 +3463,7 @@ const OC_LISTA = {
   BODEN_TRIBECA:  { precio: 98.20, por: 'caja' },
   BODEN_HBONE:    { precio: 66.45, por: 'caja' },
   BODEN_WALLCORE: { precio: 83.69, por: 'caja' },
+  BODEN_STONE:    { precio: 51.70, por: 'm2' },
   // BODEN molduras — la lista por pieza ya vive en el catálogo (campo pvp)
   BODEN_MOLDURA:  { campo: 'pvp',  por: 'pieza' },
   // BODEN splash — la lista por pieza vive en el catálogo (campo costo)
