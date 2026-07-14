@@ -1,0 +1,8 @@
+{
+  "name": "tecnoelementos-crm",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@vercel/functions": "^3.7.5"
+  }
+}
