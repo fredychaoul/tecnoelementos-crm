@@ -3815,9 +3815,11 @@ function ocRenglon(prodCot) {
   }
   const subtotal = cantidad * precioUnitario * factor;
   const cc = ocColeccionColor(cat, key);
+  // Clave provisional: molduras STONE con clave derivada (sufijo), aún sin confirmar contra Lista No.08
+  const provisional = /^ZBOD2306H-(02|12)-\d{3}$/.test(cat.clave || '');
   return {
     ok: true, proveedor: prov, clave: cat.clave, descripcion: cat.modelo || prodCot.nombre,
-    linea: cc.linea, color: cc.color, unidad, cantidad, fuente,
+    linea: cc.linea, color: cc.color, unidad, cantidad, fuente, provisional,
     precioUnitario: Math.round(precioUnitario * 10000) / 10000,
     descuentos: ds,
     subtotal: Math.round(subtotal * 100) / 100
@@ -3918,10 +3920,10 @@ function ocRenderModal() {
   }
   const m = ocActual.meta;
   const secciones = ocActual.ocs.map(oc => {
-    const filas = oc.renglones.map(r => `<tr style="border-top:1px solid #f0f0f0">
+    const filas = oc.renglones.map(r => `<tr style="border-top:1px solid #f0f0f0${r.provisional?';background:#FBF3DD':''}">
       <td style="text-align:right;padding:5px 6px">${r.cantidad}</td>
       <td style="padding:5px 6px">${r.unidad==='CAJAS'?'cajas':'pza'}</td>
-      <td style="padding:5px 6px;font-family:monospace;font-size:11px">${r.clave}</td>
+      <td style="padding:5px 6px;font-family:monospace;font-size:11px">${r.clave}${r.provisional?' <span style="color:#B0851E" title="Clave provisional — confirmar antes de enviar">⚠</span>':''}</td>
       <td style="padding:5px 6px">${r.linea}${r.color?(' · '+r.color):''}</td>
       <td style="text-align:right;padding:5px 6px">${ocMoney(r.precioUnitario)}</td>
       <td style="text-align:center;padding:5px 6px;color:#888">${r.descuentos.map(d=>Math.round(d*100)+'%').join('/')}</td>
@@ -3945,6 +3947,9 @@ function ocRenderModal() {
   }).join('');
   const pend = ocActual.pendientes.length ? `<div style="background:#FBF3DD;border:1px solid #E8C96B;border-radius:10px;padding:10px 12px;margin-top:14px;font-size:12px;color:#7a5a00">
     ⚠️ <strong>${ocActual.pendientes.length} producto(s) omitido(s)</strong> (sin catálogo o sin costo): ${ocActual.pendientes.map(p=>(p.nombre||p.clave||'?')).join(', ')}. Si aplican, captúralos a mano en el Excel.</div>` : '';
+  const provList = ocActual.ocs.flatMap(o => o.renglones).filter(r => r.provisional);
+  const provWarn = provList.length ? `<div style="background:#FDE8E8;border:1px solid #E4A0A0;border-radius:10px;padding:10px 12px;margin-top:14px;font-size:12px;color:#8A2A2A">
+    ⚠️ <strong>Claves provisionales (${provList.length})</strong>: ${[...new Set(provList.map(r=>r.clave))].join(', ')}. Son molduras STONE con clave derivada — <strong>confírmalas contra la Lista No.08 STONE antes de enviar esta OC</strong> al proveedor.</div>` : '';
   const notaDeriv = '';
 
   host.innerHTML = `<div style="background:#fff;border-radius:16px;max-width:880px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
@@ -3963,6 +3968,7 @@ function ocRenderModal() {
       <div style="flex-basis:100%;font-size:11px;color:#999" id="oc-tc-info">Cargando TC…</div>
     </div>
     ${secciones}
+    ${provWarn}
     ${pend}
     ${notaDeriv}
     <div style="text-align:right;margin-top:16px"><button onclick="ocCerrarModal()" style="background:none;border:1px solid #ddd;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer">Cerrar</button></div>
