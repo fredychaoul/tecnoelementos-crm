@@ -162,6 +162,10 @@
   .tl-body .vt { font-size: 12.5px; font-weight: 600; text-align: right; }
   .tl-body .delta { font-size: 11px; font-weight: 600; color: var(--ink-soft); text-align: right; }
   .tl-tag { justify-self: end; display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; color: var(--ok); white-space: nowrap; }
+  .tl-actions { justify-self: end; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .tl-btn { font-size: 11px; font-weight: 600; color: var(--ink-soft); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; cursor: pointer; padding: 3px 9px; transition: all .14s var(--ease-out); white-space: nowrap; }
+  .tl-btn:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .tl-tag-on { border: 1px solid var(--ok); background: transparent; border-radius: 999px; padding: 3px 9px; cursor: pointer; }
   .btn-detalle { margin: 10px 0 0 30px; font-size: 12px; font-weight: 600; color: var(--ink-soft); background: none; border: none; cursor: pointer; padding: 4px 0; text-decoration: underline; text-underline-offset: 3px; transition: color .14s var(--ease-out); }
   .btn-detalle:hover { color: var(--ink); }
   @media (max-width: 768px) {
@@ -2211,6 +2215,8 @@ async function generarPDF(cotData) {
   const datos = cotData || recopilarDatos();
   if (!cotData && !datos.cliente) { alert('Ingresa el nombre del cliente'); return; }
 
+  const version = datos.version || 1;   // sello y nombre de archivo con versión
+
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pw = 210, ph = 297;
@@ -2242,7 +2248,7 @@ async function generarPDF(cotData) {
   doc.setFontSize(8);
   doc.setFont('helvetica','normal');
   doc.setTextColor(170,170,170);
-  doc.text('TEC-' + String(datos.folio).padStart(4,'0'), pw-mg, 19, {align:'right'});
+  doc.text('TEC-' + String(datos.folio).padStart(4,'0') + '  ·  v' + version, pw-mg, 19, {align:'right'});
 
   // ── Paginación / cortes conscientes del pie ──────────────────
   // El pie ocupa los últimos 20mm; el contenido no debe bajar de aquí.
@@ -2257,7 +2263,7 @@ async function generarPDF(cotData) {
     doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(255,255,255);
     doc.text('COTIZACIÓN', pw-mg, 7.5, {align:'right'});
     doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(170,170,170);
-    doc.text('TEC-' + String(datos.folio).padStart(4,'0'), pw-mg, 12.5, {align:'right'});
+    doc.text('TEC-' + String(datos.folio).padStart(4,'0') + '  ·  v' + version, pw-mg, 12.5, {align:'right'});
     return 24;   // y de arranque del contenido bajo el membrete
   };
   // Salto de página que redibuja el membrete y devuelve la y de arranque
@@ -2627,7 +2633,27 @@ async function generarPDF(cotData) {
 
   const nombreCliente = datos.cliente.replace(/\s+/g,'-');
   const nombreProyecto = datos.proyecto ? '-' + datos.proyecto.replace(/\s+/g,'-') : '';
-  doc.save(`Cotizacion-${String(datos.folio).padStart(4,'0')}-${nombreCliente}${nombreProyecto}.pdf`);
+  doc.save(`Cotizacion-${String(datos.folio).padStart(4,'0')}-v${version}-${nombreCliente}${nombreProyecto}.pdf`);
+
+  // Generar el PDF de una cotización guardada = producir lo que se envía → marca esa versión como enviada
+  if (cotData && cotData.folio) {
+    try {
+      const lista = await getCotizaciones();
+      const c = lista.find(x => String(x.folio) === String(cotData.folio));
+      if (c) {
+        if (!c.versiones || !c.versiones.length) {
+          c.versiones = [{ version: c.version || 1, fecha: c.fecha, total: c.total, subtotal: c.subtotal,
+                           enviada: null, productos: snapshotProductos(c.productos), instalacion: snapshotInst(c.instalacion) }];
+        }
+        const vv = c.versiones.find(v => (v.version || 1) === (c.version || 1)) || c.versiones[c.versiones.length - 1];
+        if (vv && !vv.enviada) {
+          vv.enviada = new Date().toLocaleDateString('es-MX');
+          await saveCotizaciones(lista);
+          if (typeof renderCRM === 'function') renderCRM();
+        }
+      }
+    } catch (e) { /* nunca romper la generación del PDF por esto */ }
+  }
 }
 
 // ═══════════════════ CRM ═══════════════════
@@ -2692,10 +2718,17 @@ async function renderCRM() {
       const prev = i > 0 ? versiones[i-1] : null;
       const delta = prev ? (Number(v.total) - Number(prev.total)) : 0;
       const deltaStr = prev ? ((delta >= 0 ? '+' : '−') + fmtMoney(c.simbolo, Math.abs(delta))) : '—';
-      const sent = v.enviada === true;
+      const sent = !!v.enviada;
+      const sentFecha = (typeof v.enviada === 'string') ? v.enviada : '';
+      const diffBtn = i > 0
+        ? `<button class="tl-btn" onclick="verDiffVersion(event,'${c.folio}',${i})">¿qué cambió?</button>`
+        : '';
+      const enviadaBtn = sent
+        ? `<button class="tl-tag tl-tag-on" onclick="marcarEnviada(event,'${c.folio}',${i})" title="Clic para desmarcar">✓ Enviada${sentFecha ? ' · ' + sentFecha : ''}</button>`
+        : `<button class="tl-btn" onclick="marcarEnviada(event,'${c.folio}',${i})">marcar enviada</button>`;
       return `
         <div class="tl-item${sent ? ' sent' : ''}"><div class="tl-rail"><span class="tl-dot"></span></div>
-          <div class="tl-body"><span class="vn">v${v.version || (i+1)}</span><span class="vd">${v.fecha || ''}</span><span class="vt">${fmtMoney(c.simbolo, v.total)}</span><span class="delta">${deltaStr}</span>${sent ? '<span class="tl-tag">✓ Enviada</span>' : ''}</div></div>`;
+          <div class="tl-body"><span class="vn">v${v.version || (i+1)}</span><span class="vd">${v.fecha || ''}</span><span class="vt">${fmtMoney(c.simbolo, v.total)}</span><span class="delta">${deltaStr}</span><span class="tl-actions">${diffBtn}${enviadaBtn}</span></div></div>`;
     }).join('');
     return `
     <div class="crmrow" data-folio="${c.folio}">
@@ -2722,6 +2755,94 @@ async function renderCRM() {
 }
 
 function toggleCrmRow(el) { el.closest('.crmrow').classList.toggle('open'); }
+
+// Reabrir la fila expandida tras un re-render del CRM
+function _reabrirFila(folio) {
+  const row = document.querySelector(`.crmrow[data-folio="${folio}"]`);
+  if (row) row.classList.add('open');
+}
+
+// Marca/desmarca una versión como "Enviada al cliente"
+async function marcarEnviada(ev, folio, i) {
+  if (ev) ev.stopPropagation();
+  const lista = await getCotizaciones();
+  const c = lista.find(x => String(x.folio) === String(folio));
+  if (!c) return;
+  if (!c.versiones || !c.versiones.length) {
+    c.versiones = [{ version: c.version || 1, fecha: c.fecha, total: c.total, subtotal: c.subtotal,
+                     enviada: null, productos: snapshotProductos(c.productos), instalacion: snapshotInst(c.instalacion) }];
+  }
+  const v = c.versiones[i];
+  if (!v) return;
+  v.enviada = v.enviada ? null : new Date().toLocaleDateString('es-MX');
+  await saveCotizaciones(lista);
+  await renderCRM();
+  _reabrirFila(folio);
+}
+
+// Muestra qué cambió entre una versión y la anterior
+async function verDiffVersion(ev, folio, i) {
+  if (ev) ev.stopPropagation();
+  const lista = await getCotizaciones();
+  const c = lista.find(x => String(x.folio) === String(folio));
+  if (!c || !c.versiones || !c.versiones[i] || !c.versiones[i-1]) return;
+  const nueva = c.versiones[i], vieja = c.versiones[i-1];
+  const sim = c.simbolo;
+  const key = p => (p.clave || p.nombre || '').trim();
+  const mapV = new Map((vieja.productos || []).map(p => [key(p), p]));
+  const mapN = new Map((nueva.productos || []).map(p => [key(p), p]));
+  const filas = [];
+  mapN.forEach((p, k) => {
+    const o = mapV.get(k);
+    if (!o) {
+      filas.push({ t: 'add', txt: `${escHtml(p.nombre)} — ${p.cantidad} ${escHtml(p.unidad||'')} × ${fmtMoney(sim, p.pvp_final)}` });
+    } else if (Number(o.cantidad) !== Number(p.cantidad) || Number(o.pvp_final) !== Number(p.pvp_final)) {
+      const partes = [];
+      if (Number(o.cantidad) !== Number(p.cantidad)) partes.push(`cantidad ${o.cantidad} → <strong>${p.cantidad}</strong>`);
+      if (Number(o.pvp_final) !== Number(p.pvp_final)) partes.push(`precio ${fmtMoney(sim, o.pvp_final)} → <strong>${fmtMoney(sim, p.pvp_final)}</strong>`);
+      filas.push({ t: 'chg', txt: `${escHtml(p.nombre)} — ${partes.join(' · ')}` });
+    }
+  });
+  mapV.forEach((p, k) => { if (!mapN.has(k)) filas.push({ t: 'del', txt: escHtml(p.nombre) }); });
+
+  // Instalación (por nombre)
+  const keyI = s => (s.nombre || '').trim();
+  const iV = new Map((vieja.instalacion || []).map(s => [keyI(s), s]));
+  const iN = new Map((nueva.instalacion || []).map(s => [keyI(s), s]));
+  iN.forEach((s, k) => {
+    const o = iV.get(k);
+    if (!o) filas.push({ t: 'add', txt: `🔧 ${escHtml(s.nombre)} — ${fmtMoney(sim, s.total)}` });
+    else if (Number(o.total) !== Number(s.total)) filas.push({ t: 'chg', txt: `🔧 ${escHtml(s.nombre)} — ${fmtMoney(sim, o.total)} → <strong>${fmtMoney(sim, s.total)}</strong>` });
+  });
+  iV.forEach((s, k) => { if (!iN.has(k)) filas.push({ t: 'del', txt: `🔧 ${escHtml(s.nombre)}` }); });
+
+  const totalDelta = Number(nueva.total) - Number(vieja.total);
+  const color = { add: 'var(--ok)', del: 'var(--lost)', chg: 'var(--sent)' };
+  const icon  = { add: '➕', del: '➖', chg: '✏️' };
+  const cuerpo = filas.length
+    ? filas.map(f => `<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;">
+        <span style="color:${color[f.t]};font-weight:700;flex:none">${icon[f.t]}</span><span style="color:var(--ink)">${f.txt}</span></div>`).join('')
+    : `<div style="padding:12px 0;color:var(--ink-soft);font-size:13px;">Sin cambios en las partidas (solo cambió el total o algún dato general).</div>`;
+
+  let modal = document.getElementById('diff-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'diff-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(20,25,40,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    document.body.appendChild(modal);
+  }
+  const dTot = (totalDelta >= 0 ? '+' : '−') + fmtMoney(sim, Math.abs(totalDelta));
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;max-width:560px;width:100%;max-height:80vh;overflow:auto;box-shadow:0 20px 60px -15px rgba(20,30,60,.4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line);">
+        <div><div style="font-weight:700;color:var(--ink);font-size:15px;">TEC-${String(c.folio).padStart(4,'0')} · qué cambió</div>
+        <div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">v${vieja.version||i} → v${nueva.version||(i+1)} &nbsp;·&nbsp; total ${dTot}</div></div>
+        <button onclick="document.getElementById('diff-modal').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink-faint);line-height:1;">×</button>
+      </div>
+      <div style="padding:8px 20px 18px;">${cuerpo}</div>
+    </div>`;
+}
 
 async function descartarBorrador(tr) {
   if (!confirm('¿Descartar este borrador?')) return;
