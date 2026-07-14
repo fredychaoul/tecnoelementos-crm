@@ -1407,8 +1407,10 @@ async function incrementFolio() {
 // si no hay conexión o el backend aún no tiene la acción, cae al cálculo local y marca tentativo.
 async function reservarFolio() {
   try {
+    // Piso conocido localmente → el servidor devuelve max(contador, min)+1 (a prueba de colisiones)
+    const minLocal = (await getNextFolio()) - 1;
     const r = await Promise.race([
-      sheetsRequest({ action: 'nextFolio' }),
+      sheetsRequest({ action: 'nextFolio', min: minLocal }),
       new Promise(res => setTimeout(() => res({ ok: false, timeout: true }), 6000))
     ]);
     if (r && r.ok && r.folio) {
