@@ -569,6 +569,7 @@
       <button class="btn btn-outline btn-sm" onclick="agregarProducto()">+ Del catálogo</button>
       <button class="btn btn-outline btn-sm" style="margin-left:8px" onclick="agregarManual()">✏️ Producto manual</button>
     </div>
+    <div id="resumen-medidas" style="display:none;margin-top:12px;padding:9px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--ink-soft);align-items:center;gap:10px;flex-wrap:wrap;"></div>
 
   </div>
 
@@ -1685,9 +1686,23 @@ function recalcular() {
   const simbolo  = moneda === 'MXN' ? '$' : 'USD ';
 
   let subtotal = 0;
+  const med = { m2: 0, cajas: 0, ml: 0, pzasMold: 0 };   // resumen de medidas cotizadas
   document.querySelectorAll('[id^="fila-"]').forEach(fila => {
     const id   = fila.id;
     const cant = parseFloat(document.getElementById(id + '-cant')?.value) || 0;
+    // Refrescar el hint de cajas/ml de la fila (también al cargar una edición)
+    actualizarCajas(id);
+    // Acumular medidas del renglón (cajas / ml / m²)
+    const prodMed = PRODUCTOS.find(p => p.modelo === (document.getElementById(id + '-prod')?.value || ''));
+    if (prodMed && cant > 0) {
+      if (prodMed.unidad === 'PIEZA' && /2\.40/.test(prodMed.formato || '')) {
+        med.ml += cant * 2.40; med.pzasMold += cant;
+      } else if (prodMed.caja) {
+        med.m2 += cant;
+        const ce = Math.ceil(cant / prodMed.caja);
+        med.cajas += prodMed.cajaPar ? (ce % 2 === 0 ? ce : ce + 1) : ce;
+      }
+    }
     const pvpInput  = document.getElementById(id + '-pvp');
     if (!pvpInput) return;
     const pvpBase    = parseFloat(pvpInput.dataset.pvpBase);
@@ -1720,6 +1735,8 @@ function recalcular() {
       }
     }
   });
+
+  actualizarResumenMedidas(med);
 
   const flete_monto  = parseFloat(document.getElementById('flete-monto')?.value) || 0;
   const flete_cobrado = fleteVal === 'cobrado';
@@ -2027,6 +2044,34 @@ async function guardarBorrador() {
   }
 }
 
+// ── Resumen de medidas cotizadas (cajas / ml / m²) en el formulario
+function actualizarResumenMedidas(med) {
+  const el = document.getElementById('resumen-medidas');
+  if (!el) return;
+  const partes = [];
+  if (med.m2 > 0)    partes.push(`<span>📐 <strong>${med.m2.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})} m²</strong> de piso</span>`);
+  if (med.cajas > 0) partes.push(`<span>📦 <strong>${med.cajas}</strong> caja${med.cajas !== 1 ? 's' : ''}</span>`);
+  if (med.ml > 0)    partes.push(`<span>📏 <strong>${med.ml.toFixed(2)} ml</strong> de moldura (${med.pzasMold} pza${med.pzasMold !== 1 ? 's' : ''})</span>`);
+  if (!partes.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.innerHTML = `<span style="font-weight:700;color:var(--ink);text-transform:uppercase;font-size:10px;letter-spacing:.08em;">Resumen</span>`
+    + partes.join('<span style="color:var(--ink-faint)">·</span>');
+  el.style.display = 'flex';
+}
+
+// ── Historial de versiones: snapshots compactos + firma de cambios
+function snapshotProductos(arr) {
+  return (arr || []).map(p => ({ nombre: p.nombre, clave: p.clave || '', cantidad: p.cantidad, unidad: p.unidad, pvp_final: p.pvp_final }));
+}
+function snapshotInst(arr) {
+  return (arr || []).map(s => ({ nombre: s.nombre, cantidad: s.cantidad, total: s.total }));
+}
+// Firma del contenido para no crear versiones espurias si nada cambió
+function firmaCotizacion(c) {
+  const prod = (c.productos || []).map(p => `${p.nombre}|${p.clave || ''}|${p.cantidad}|${p.pvp_final}`).join(';');
+  const inst = (c.instalacion || []).map(s => `${s.nombre}|${s.cantidad}|${s.precio_unit || s.total}`).join(';');
+  return prod + '#' + inst + '#' + (c.total || 0) + '#' + (c.observaciones || '');
+}
+
 async function guardarCotizacion() {
   const datos = recopilarDatos();
   if (!datos.cliente) { alert('Por favor ingresa el nombre del cliente'); return; }
@@ -2059,13 +2104,40 @@ async function guardarCotizacion() {
       currentFolio = await getNextFolio();
       document.getElementById('folio-display').textContent = 'TEC-' + String(currentFolio).padStart(4,'0');
     } else {
-      // EDICIÓN NORMAL — sobreescribir registro, conservar folio y fecha original
+      // EDICIÓN NORMAL — conserva folio y fecha de emisión; crea NUEVA VERSIÓN si el contenido cambió
       const idx      = lista.findIndex(c => c.folio === editandoFolio);
       const original = idx >= 0 ? lista[idx] : null;
       datos.folio    = editandoFolio;
-      datos.fecha    = original?.fecha    || datos.fecha;
+      datos.fecha    = original?.fecha    || datos.fecha;   // fecha de emisión original (v1)
       datos.fechaObj = original?.fechaObj || datos.fechaObj;
       datos.status   = original?.status   || 'Pendiente';
+
+      // Historial append-only: si no existe, sintetiza v1 desde el registro original
+      const versiones = (original?.versiones && original.versiones.length)
+        ? original.versiones.slice()
+        : [{ version: 1, fecha: original?.fecha || datos.fecha, total: original?.total || 0,
+             subtotal: original?.subtotal || 0, enviada: null,
+             productos: snapshotProductos(original?.productos),
+             instalacion: snapshotInst(original?.instalacion) }];
+
+      const verActual = original?.version || versiones.length || 1;
+      const cambio    = firmaCotizacion(datos) !== firmaCotizacion(original || {});
+
+      if (cambio) {
+        const hoy = new Date().toLocaleDateString('es-MX');
+        const nuevaVersion = verActual + 1;
+        versiones.push({ version: nuevaVersion, fecha: hoy, total: datos.total,
+                         subtotal: datos.subtotal, enviada: null,
+                         productos: snapshotProductos(datos.productos),
+                         instalacion: snapshotInst(datos.instalacion) });
+        datos.version = nuevaVersion;
+      } else {
+        datos.version = verActual;   // sin cambios → no versiona, solo re-guarda
+      }
+      datos.versiones = versiones;
+      window._ultimaVersionGuardada = datos.version;
+      window._huboCambioVersion     = cambio;
+
       if (idx >= 0) lista[idx] = datos; else lista.unshift(datos);
       await saveCotizaciones(lista);
     }
@@ -2079,9 +2151,12 @@ async function guardarCotizacion() {
     const btnG = document.querySelector('button[onclick="guardarCotizacion()"]');
     if (btnG) {
       const origTxt = btnG.innerHTML;
+      const folioTxt = 'TEC-' + String(editandoFolio).padStart(4,'0');
       btnG.innerHTML = esBorradorEdit
         ? '✅ Guardada TEC-' + String(datos.folio).padStart(4,'0')
-        : '✅ Actualizada TEC-' + String(editandoFolio).padStart(4,'0');
+        : (window._huboCambioVersion
+            ? '✅ ' + folioTxt + ' guardada como v' + window._ultimaVersionGuardada
+            : '✅ ' + folioTxt + ' actualizada (sin cambios, sigue v' + window._ultimaVersionGuardada + ')');
       btnG.style.background = '#b8860b';
       setTimeout(() => { btnG.innerHTML = origTxt; btnG.style.background = ''; }, 2500);
     }
@@ -2868,7 +2943,10 @@ async function editarCotizacion() {
         </select>
         <input type="text" id="${id}-clave" value="${escHtml(p.clave||'')}" readonly style="background:#f8f8f8;">
         <input type="text" id="${id}-formato" value="${escHtml(p.formato||'')}" readonly style="background:#f8f8f8;">
-        <input type="number" id="${id}-cant" value="${p.cantidad}" min="0" step="0.001" oninput="recalcular()">
+        <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+          <input type="number" id="${id}-cant" value="${p.cantidad}" min="0" step="0.001" oninput="actualizarCajas('${id}');recalcular()">
+          <div class="caja-hint" id="${id}-caja-hint"></div>
+        </div>
         <input type="text" id="${id}-unidad" value="${escHtml(p.unidad||'')}" style="text-align:center;">
         <div style="display:flex;align-items:center;gap:3px;min-width:0;">
           <input type="number" id="${id}-pvp" value="${p.pvp_final}" step="0.01" oninput="this.dataset.editadoManual='1';recalcular()" data-pvp-base="${p.pvp_base || p.pvp_final}" data-moneda="${p.moneda_prod || cot.moneda||'USD'}" data-editado-manual="1" data-costo="${PRODUCTOS.find(x => x.modelo === p.nombre)?.costo || 0}" style="flex:1;min-width:0;" title="Precio editable">
@@ -2958,7 +3036,7 @@ function mostrarBannerEdicion(folio, cliente) {
     document.querySelector('nav').insertAdjacentElement('afterend', banner);
   }
   banner.innerHTML = `
-    <span>✏️ Editando cotización <strong>TEC-${String(folio).padStart(4,'0')}</strong> — ${cliente} &nbsp;|&nbsp; Al guardar se actualizará el registro existente.</span>
+    <span>✏️ Editando cotización <strong>TEC-${String(folio).padStart(4,'0')}</strong> — ${cliente} &nbsp;|&nbsp; Al guardar, si hay cambios se creará una <strong>nueva versión</strong> (el folio se mantiene).</span>
     <button onclick="cancelarEdicion()" style="background:#1A1A1A;color:white;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer">✕ Cancelar edición</button>
   `;
 }
@@ -3119,12 +3197,23 @@ function actualizarCajas(id) {
   if (!cantInput || !hint || !prodSel) return;
 
   const cant = parseFloat(cantInput.value) || 0;
-  if (cant <= 0) { hint.className = 'caja-hint'; return; }
+  if (cant <= 0) { hint.className = 'caja-hint'; hint.innerHTML = ''; return; }
 
   // Obtener el objeto producto del catálogo
   const modelo = prodSel.value;
   const prod = PRODUCTOS.find(p => p.modelo === modelo);
-  if (!prod || !prod.caja) { hint.className = 'caja-hint'; return; }
+  if (!prod) { hint.className = 'caja-hint'; hint.innerHTML = ''; return; }
+
+  // Molduras: se venden por pieza de 2.40 ml → mostrar los ml totales
+  const esMoldura = prod.unidad === 'PIEZA' && /2\.40/.test(prod.formato || '');
+  if (esMoldura) {
+    const ml = cant * 2.40;
+    hint.innerHTML = `${cant} pza${cant !== 1 ? 's' : ''} × 2.40 m = <strong>${ml.toFixed(2)} ml</strong>`;
+    hint.className = 'caja-hint visible ok';
+    return;
+  }
+
+  if (!prod.caja) { hint.className = 'caja-hint'; hint.innerHTML = ''; return; }
 
   const cajasExactas = cant / prod.caja;
   const cajasCeil = Math.ceil(cajasExactas);
