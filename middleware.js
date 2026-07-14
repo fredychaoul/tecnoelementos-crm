@@ -38,6 +38,21 @@ const pedirCredenciales = () =>
   });
 
 export default function middleware(request) {
+  // ── Diagnóstico temporal: reporta SOLO si las variables existen (nunca su
+  //    valor). Se quita en cuanto confirmemos qué ve el middleware.
+  const urlDiag = new URL(request.url);
+  if (urlDiag.searchParams.get('__diag') === 'tecno2026') {
+    const visibles = Object.keys(process.env || {}).filter((k) =>
+      /CRM|BANXICO|ANTHROPIC/.test(k)
+    );
+    return Response.json({
+      CRM_PASS: !!process.env.CRM_PASS,
+      CRM_USER: !!process.env.CRM_USER,
+      BANXICO_TOKEN: !!process.env.BANXICO_TOKEN,
+      clavesVisibles: visibles,
+    });
+  }
+
   const USUARIO = process.env.CRM_USER || 'tecnoelementos';
   const CLAVE = process.env.CRM_PASS;
 
