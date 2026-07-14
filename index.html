@@ -2194,14 +2194,27 @@ async function actualizarTC() {
   const original = btn.innerHTML;
   btn.innerHTML = '⏳';
   btn.disabled = true;
+  const setTC = (v) => { document.getElementById('tipo-cambio').value = Number(v).toFixed(2); recalcular(); };
   try {
+    // Fuente oficial: Banxico FIX + $0.15 (serverless /api/tipo-cambio, mismo que la OC)
+    const rB = await fetch('/api/tipo-cambio');
+    const dB = await rB.json().catch(() => null);
+    if (dB && dB.ok && dB.tc) {
+      setTC(dB.tc);
+      btn.innerHTML = '✅';
+      mostrarToast('TC Banxico FIX $' + dB.fix + ' + $0.15 = $' + dB.tc + (dB.fecha ? ' · ' + dB.fecha : ''), 'info');
+      setTimeout(() => { btn.innerHTML = original; btn.disabled = false; }, 1500);
+      return;
+    }
+    // Respaldo si falta el token o no hay dato de Banxico
     const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
     const data = await res.json();
-    const tcBase = data.rates['MXN'];
-    const tcFinal = Math.round((tcBase + 0.15) * 100) / 100;
-    document.getElementById('tipo-cambio').value = tcFinal.toFixed(2);
-    recalcular();
+    const tcFinal = Math.round((data.rates['MXN'] + 0.15) * 100) / 100;
+    setTC(tcFinal);
     btn.innerHTML = '✅';
+    mostrarToast((dB && dB.error === 'no_token')
+      ? 'TC de respaldo aplicado (falta BANXICO_TOKEN en Vercel para usar Banxico).'
+      : 'TC de respaldo aplicado.', 'info');
     setTimeout(() => { btn.innerHTML = original; btn.disabled = false; }, 1500);
   } catch(e) {
     btn.innerHTML = '❌';
