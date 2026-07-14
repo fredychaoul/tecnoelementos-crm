@@ -10,6 +10,9 @@
 import { next } from '@vercel/functions';
 
 export const config = {
+  // Runtime Node (no Edge): las variables de entorno marcadas "Sensitive" en
+  // Vercel —como CRM_PASS— solo se exponen al runtime de Node, no al de Edge.
+  runtime: 'nodejs',
   // Todo el sitio. Se deja fuera el favicon para no pedir credenciales al
   // pintar la pestaña del navegador.
   matcher: '/((?!favicon\\.ico).*)',
