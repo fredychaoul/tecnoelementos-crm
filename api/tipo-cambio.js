@@ -1,11 +1,11 @@
 // Función serverless (Vercel) — devuelve el tipo de cambio para la OC:
-// FIX de Banxico (serie SF63528) + $0.15. El token vive SOLO aquí (variable de
+// FIX de Banxico (serie SF63528) + $0.30. El token vive SOLO aquí (variable de
 // entorno BANXICO_TOKEN en Vercel), nunca en el navegador.
 //
 // GET -> { ok:true, fix:Number, tc:Number, fecha:'dd/mm/yyyy' }
 //     -> { ok:false, error:'no_token' | 'sin_dato' | 'fallo' }
 
-const AJUSTE = 0.15; // sobreprecio fijo sobre el FIX
+const AJUSTE = 0.30; // sobreprecio fijo sobre el FIX
 
 export default async function handler(req, res) {
   const token = process.env.BANXICO_TOKEN;

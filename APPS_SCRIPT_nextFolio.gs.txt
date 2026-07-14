@@ -1,0 +1,53 @@
+═══════════════════════════════════════════════════════════════════════════
+  FOLIO ÚNICO ATÓMICO — para tu Apps Script del CRM
+  Proyecto backend identificado: script ID
+    1I27VX6mpBrGzewS90Y4vJ3hsG0jHnRUHq3CNLMSnVQBHnfFEBrZuz5yI
+    (el "Proyecto sin título" modificado el 12 mar 2026)
+  Abrir directo:
+    https://script.google.com/home/projects/1I27VX6mpBrGzewS90Y4vJ3hsG0jHnRUHq3CNLMSnVQBHnfFEBrZuz5yI/edit
+═══════════════════════════════════════════════════════════════════════════
+
+Este snippet ya está AJUSTADO a tu código real: tu router usa `data` (el body
+parseado) y `respuesta(obj)` para responder. No depende de sembrar nada: el
+cliente manda `min` (folio más alto conocido) y el servidor devuelve
+max(contador, min)+1 de forma atómica (LockService). A prueba de colisiones.
+
+───────────────────────────────────────────────────────────────────────────
+PASO 1 — En doPost, JUSTO ANTES de la línea del fallback
+         `return respuesta({ ... 'Accion desconocida' ... });`
+         (es la última línea del router, ~línea 12), pega esta línea:
+───────────────────────────────────────────────────────────────────────────
+
+  if (data.action === 'nextFolio') return respuesta({ ok: true, folio: _nextFolio_(data.min) });
+
+───────────────────────────────────────────────────────────────────────────
+PASO 2 — Al FINAL del archivo, pega esta función:
+───────────────────────────────────────────────────────────────────────────
+
+function _nextFolio_(min) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var last = parseInt(props.getProperty('FOLIO_LAST') || '0', 10) || 0;
+    var piso = parseInt(min || 0, 10) || 0;
+    var next = Math.max(last, piso) + 1;
+    props.setProperty('FOLIO_LAST', String(next));
+    return next;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+───────────────────────────────────────────────────────────────────────────
+PASO 3 — Guardar (Ctrl+S) y REIMPLEMENTAR sin cambiar la URL:
+───────────────────────────────────────────────────────────────────────────
+  Implementar ▸ Gestionar implementaciones ▸ (la implementación activa) ▸
+  lápiz (Editar) ▸ Versión: "Versión nueva" ▸ Implementar.
+  ⚠️ NO "Nueva implementación" (cambia la URL y rompería el CRM).
+
+───────────────────────────────────────────────────────────────────────────
+PASO 4 — Verificar: en el CRM crea y guarda una cotización nueva. Si el folio
+         vino del servidor, NO llevará la marca interna "folioTentativo".
+         (El CRM ya funciona sin esto: usa el folio local como respaldo.)
+═══════════════════════════════════════════════════════════════════════════

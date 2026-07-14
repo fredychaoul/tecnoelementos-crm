@@ -545,7 +545,7 @@
         <label>Tipo de Cambio (USD→MXN)</label>
         <div style="display:flex;gap:8px;align-items:center;">
           <input type="number" id="tipo-cambio" value="17.50" step="0.01" oninput="recalcular()" style="flex:1;">
-          <button onclick="actualizarTC()" id="btn-tc" title="Actualizar TC (exchangerate-api +$0.15)" class="btn btn-dark btn-sm" style="white-space:nowrap;">🔄 TC</button>
+          <button onclick="actualizarTC()" id="btn-tc" title="Actualizar TC (Banxico FIX +$0.30)" class="btn btn-dark btn-sm" style="white-space:nowrap;">🔄 TC</button>
         </div>
       </div>
     </div>
@@ -2237,20 +2237,20 @@ async function actualizarTC() {
   btn.disabled = true;
   const setTC = (v) => { document.getElementById('tipo-cambio').value = Number(v).toFixed(2); recalcular(); };
   try {
-    // Fuente oficial: Banxico FIX + $0.15 (serverless /api/tipo-cambio, mismo que la OC)
+    // Fuente oficial: Banxico FIX + $0.30 (serverless /api/tipo-cambio, mismo que la OC)
     const rB = await fetch('/api/tipo-cambio');
     const dB = await rB.json().catch(() => null);
     if (dB && dB.ok && dB.tc) {
       setTC(dB.tc);
       btn.innerHTML = '✅';
-      mostrarToast('TC Banxico FIX $' + dB.fix + ' + $0.15 = $' + dB.tc + (dB.fecha ? ' · ' + dB.fecha : ''), 'info');
+      mostrarToast('TC Banxico FIX $' + dB.fix + ' + $0.30 = $' + dB.tc + (dB.fecha ? ' · ' + dB.fecha : ''), 'info');
       setTimeout(() => { btn.innerHTML = original; btn.disabled = false; }, 1500);
       return;
     }
     // Respaldo si falta el token o no hay dato de Banxico
     const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
     const data = await res.json();
-    const tcFinal = Math.round((data.rates['MXN'] + 0.15) * 100) / 100;
+    const tcFinal = Math.round((data.rates['MXN'] + 0.30) * 100) / 100;
     setTC(tcFinal);
     btn.innerHTML = '✅';
     mostrarToast((dB && dB.error === 'no_token')
@@ -4040,7 +4040,7 @@ async function ocCargarTC() {
     if (d && d.ok && d.tc) {
       ocActual.meta.tc = d.tc;
       const inp = document.getElementById('oc-tc'); if (inp) inp.value = d.tc;
-      if (info) info.textContent = 'Banxico FIX $' + d.fix + ' + $0.15 = $' + d.tc + (d.fecha ? (' · ' + d.fecha) : '');
+      if (info) info.textContent = 'Banxico FIX $' + d.fix + ' + $0.30 = $' + d.tc + (d.fecha ? (' · ' + d.fecha) : '');
     } else if (info) {
       info.textContent = (d && d.error === 'no_token') ? 'Captura el TC (falta el token de Banxico en Vercel).' : 'Captura el TC manualmente.';
     }
