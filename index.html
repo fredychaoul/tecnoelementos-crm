@@ -782,58 +782,6 @@
 
 <script>
   const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw5_mwWlDGl9f_wxzVqZT5jbJXyhO9Xg-gGyDdeQiBsF-BymVCV_LBsZ8F0w2QYawaZ/exec';
-const TODOIST_TOKEN = '4216ecfc2d3d8a26329a02e599d03dee9ddab988';
-
-// ═══════════════════ TODOIST ═══════════════════
-// IDs de proyectos — se cargan al iniciar
-let TODOIST_PROYECTOS = {};
-
-async function todoistInit() {
-  try {
-    const r = await fetch('https://api.todoist.com/rest/v2/projects', {
-      headers: { 'Authorization': `Bearer ${TODOIST_TOKEN}` }
-    });
-    if (!r.ok) throw new Error('Error ' + r.status);
-    const proyectos = await r.json();
-    proyectos.forEach(p => { TODOIST_PROYECTOS[p.name] = p.id; });
-
-    // Crear proyectos si no existen
-    const necesarios = ['📁 Tecnoelementos', '📁 Cubiermol', '📁 Personal'];
-    for (const nombre of necesarios) {
-      if (!TODOIST_PROYECTOS[nombre]) {
-        const res = await fetch('https://api.todoist.com/rest/v2/projects', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${TODOIST_TOKEN}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: nombre })
-        });
-        const np = await res.json();
-        TODOIST_PROYECTOS[nombre] = np.id;
-        console.log('✅ Todoist proyecto creado:', nombre);
-      }
-    }
-    console.log('✅ Todoist inicializado:', Object.keys(TODOIST_PROYECTOS));
-  } catch(e) {
-    console.warn('Todoist init error:', e.message);
-  }
-}
-
-// Prioridades Todoist: 4=urgente🔴, 3=alta🟠, 2=normal🟡, 1=sin prioridad
-async function enviarATodoist(tarea, proyecto, prioridad=3) {
-  const proyectoId = TODOIST_PROYECTOS[proyecto] || TODOIST_PROYECTOS['📁 Tecnoelementos'];
-  if (!proyectoId) { alert('Todoist no inicializado. Recarga la página.'); return false; }
-  try {
-    const r = await fetch('https://api.todoist.com/rest/v2/tasks', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${TODOIST_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: tarea, project_id: proyectoId, priority: prioridad })
-    });
-    if (!r.ok) throw new Error('Error ' + r.status);
-    return true;
-  } catch(e) {
-    console.error('Todoist error:', e.message);
-    return false;
-  }
-}
 
 // ═══════════════════ BASE DE DATOS DE PRECIOS ═══════════════════
 // Precios USD: BODEN/CAPPA → lista × 0.60 × 0.90 × 0.88 = costo → ÷ 0.70 = PVP B2B (30% margen s/venta)
@@ -1988,9 +1936,6 @@ function recopilarDatos() {
 
 // Inicializar pipeline con datos de ejemplo si está vacío
 
-
-// Inicializar Todoist al cargar
-todoistInit();
 
   (async function recoverCotizaciones() {
     const KEY = 'cotizaciones';
@@ -5455,90 +5400,6 @@ async function renderObra() {
     }).join('');
   }
 }
-</script>
-
-<!-- ═══════════════════ MODAL TODOIST ═══════════════════ -->
-<div id="modal-todoist" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:#1E1E1E;border-radius:12px;padding:28px;width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <span style="font-weight:700;font-size:16px;color:#fff;">📋 Nueva tarea en Todoist</span>
-      <button onclick="cerrarModalTodoist()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;">×</button>
-    </div>
-    <label style="color:#aaa;font-size:11px;font-weight:600;display:block;margin-bottom:4px;">TAREA / OPORTUNIDAD</label>
-    <textarea id="tod-tarea" rows="3" placeholder="Ej. Cotizar piso para proyecto Lomas — Ana García" 
-      style="width:100%;background:#2a2a2a;border:1px solid #444;border-radius:6px;color:#fff;padding:8px;font-size:13px;resize:none;box-sizing:border-box;"></textarea>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;">
-      <div>
-        <label style="color:#aaa;font-size:11px;font-weight:600;display:block;margin-bottom:4px;">PROYECTO</label>
-        <select id="tod-proyecto" style="width:100%;background:#2a2a2a;border:1px solid #444;border-radius:6px;color:#fff;padding:7px;font-size:13px;">
-          <option value="📁 Tecnoelementos">📁 Tecnoelementos</option>
-          <option value="📁 Cubiermol">📁 Cubiermol</option>
-          <option value="📁 Personal">📁 Personal</option>
-        </select>
-      </div>
-      <div>
-        <label style="color:#aaa;font-size:11px;font-weight:600;display:block;margin-bottom:4px;">PRIORIDAD</label>
-        <select id="tod-prioridad" style="width:100%;background:#2a2a2a;border:1px solid #444;border-radius:6px;color:#fff;padding:7px;font-size:13px;">
-          <option value="4">🔴 Urgente</option>
-          <option value="3" selected>🟠 Alta</option>
-          <option value="2">🟡 Normal</option>
-          <option value="1">⚪ Sin prioridad</option>
-        </select>
-      </div>
-    </div>
-    <div style="display:flex;gap:10px;margin-top:20px;">
-      <button onclick="cerrarModalTodoist()" 
-        style="flex:1;padding:10px;background:#333;border:none;border-radius:8px;color:#aaa;cursor:pointer;font-size:13px;">
-        Cancelar
-      </button>
-      <button onclick="guardarEnTodoist()" 
-        style="flex:2;padding:10px;background:#E44332;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;font-size:13px;">
-        ✓ Agregar a Todoist
-      </button>
-    </div>
-  </div>
-</div>
-
-<script>
-function abrirModalTodoist() {
-  // Pre-llenar con datos del formulario si hay cliente
-  const cliente = document.getElementById('cli-nombre')?.value || '';
-  const proyecto = document.getElementById('cli-proyecto')?.value || '';
-  if (cliente) {
-    document.getElementById('tod-tarea').value = cliente + (proyecto ? ' — ' + proyecto : '');
-  }
-  document.getElementById('modal-todoist').style.display = 'flex';
-  setTimeout(() => document.getElementById('tod-tarea')?.focus(), 100);
-}
-
-function cerrarModalTodoist() {
-  document.getElementById('modal-todoist').style.display = 'none';
-  document.getElementById('tod-tarea').value = '';
-}
-
-async function guardarEnTodoist() {
-  const tarea = document.getElementById('tod-tarea').value.trim();
-  const proyecto = document.getElementById('tod-proyecto').value;
-  const prioridad = parseInt(document.getElementById('tod-prioridad').value);
-  if (!tarea) { alert('Escribe una tarea'); return; }
-  
-  const btn = event.target;
-  btn.textContent = 'Enviando...'; btn.disabled = true;
-  
-  const ok = await enviarATodoist(tarea, proyecto, prioridad);
-  if (ok) {
-    btn.textContent = '✓ Agregado';
-    setTimeout(() => cerrarModalTodoist(), 1000);
-  } else {
-    btn.textContent = '✓ Agregar a Todoist'; btn.disabled = false;
-    alert('Error al conectar con Todoist. Verifica tu conexión.');
-  }
-}
-
-// Cerrar modal con Escape
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') cerrarModalTodoist();
-});
 </script>
 
 <script>
