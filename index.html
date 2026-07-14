@@ -2788,6 +2788,7 @@ async function verDiffVersion(ev, folio, i) {
   if (!c || !c.versiones || !c.versiones[i] || !c.versiones[i-1]) return;
   const nueva = c.versiones[i], vieja = c.versiones[i-1];
   const sim = c.simbolo;
+  const fmtMoney = (sym, n) => sym + Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
   const key = p => (p.clave || p.nombre || '').trim();
   const mapV = new Map((vieja.productos || []).map(p => [key(p), p]));
   const mapN = new Map((nueva.productos || []).map(p => [key(p), p]));
