@@ -2228,11 +2228,15 @@ async function generarPDF(cotData) {
   // ── Info derecha: FECHA / VÁLIDA HASTA / MONEDA
   const rx = pw-82, vx = pw-14;
   const simbolo = datos.simbolo || (datos.moneda === 'MXN' ? '$' : 'USD ');
-  const fechaVencimiento = datos.fechaObj
-    ? new Date(new Date(datos.fechaObj).getTime() + 10*864e5).toLocaleDateString('es-MX')
-    : '—';
+  // Formato dd/mm/aaaa con cero a la izquierda (independiente del locale del navegador)
+  const _p2  = n => String(n).padStart(2,'0');
+  const _dmy = d => _p2(d.getDate()) + '/' + _p2(d.getMonth()+1) + '/' + d.getFullYear();
+  const DIAS_VIGENCIA = 15;   // vigencia de la cotización en días
+  const _emis = datos.fechaObj ? new Date(datos.fechaObj) : null;
+  const fechaEmision     = _emis ? _dmy(_emis) : datos.fecha;
+  const fechaVencimiento = _emis ? _dmy(new Date(_emis.getTime() + DIAS_VIGENCIA*864e5)) : '—';
   const infoRows = [
-    ['FECHA',        datos.fecha],
+    ['FECHA',        fechaEmision],
     ['VÁLIDA HASTA', fechaVencimiento],
     ['MONEDA',       datos.moneda],
   ];
@@ -2266,7 +2270,7 @@ async function generarPDF(cotData) {
     heads.forEach((h, i) => {
       const isNum = i >= 3;
       const cx = (cols[i]+cols[i+1])/2;
-      doc.text(h, isNum ? cx : cols[i]+2, yy-1, {align: isNum ? 'center' : 'left', maxWidth: cols[i+1]-cols[i]-3});
+      doc.text(h, isNum ? cx : cols[i]+2, yy-1, {align: isNum ? 'center' : 'left', maxWidth: cols[i+1]-cols[i]-1});
     });
   };
   drawProdHead(y);
