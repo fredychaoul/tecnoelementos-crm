@@ -1401,6 +1401,38 @@ async function incrementFolio() {
   await storageSet('folio', { last: folioActual + 1 });
   return folioActual + 1;
 }
+
+// Reserva un folio ÚNICO en el momento de guardar.
+// Pide al dispensador atómico del servidor (Apps Script, action:'nextFolio' con LockService);
+// si no hay conexión o el backend aún no tiene la acción, cae al cálculo local y marca tentativo.
+async function reservarFolio() {
+  try {
+    const r = await Promise.race([
+      sheetsRequest({ action: 'nextFolio' }),
+      new Promise(res => setTimeout(() => res({ ok: false, timeout: true }), 6000))
+    ]);
+    if (r && r.ok && r.folio) {
+      const n = parseInt(r.folio, 10);
+      if (Number.isFinite(n) && n > 0) {
+        await storageSet('folio', { last: n });   // mantener el contador local al día
+        return { folio: n, tentativo: false };
+      }
+    }
+  } catch (e) { /* red caída → respaldo local */ }
+  const local = await getNextFolio();
+  return { folio: local, tentativo: true };
+}
+
+// Reconciliación: detecta folios repetidos entre cotizaciones reales (no borradores)
+async function detectarFoliosDuplicados() {
+  const lista = await getCotizaciones();
+  const cuenta = {};
+  lista.filter(c => !c.esBorrador && String(c.folio) !== 'BORRADOR').forEach(c => {
+    const f = parseFolio(c.folio);
+    if (f > 0) cuenta[f] = (cuenta[f] || 0) + 1;
+  });
+  return Object.keys(cuenta).filter(f => cuenta[f] > 1).map(f => parseInt(f, 10));
+}
 // ═══════════════════ GOOGLE SHEETS SYNC ═══════════════════
 async function sheetsRequest(payload) {
   try {
@@ -2097,8 +2129,10 @@ async function guardarCotizacion() {
         c.esBorrador && (c.id_borrador === window._editandoBorrador || String(c.folio) === 'BORRADOR')
       );
       if (idxB >= 0) lista.splice(idxB, 1);
-      // Asignar el folio correcto (currentFolio ya está seteado)
-      datos.folio       = currentFolio;
+      // Folio único reservado al guardar (atómico si hay servidor; local si no)
+      const rfB = await reservarFolio();
+      datos.folio       = rfB.folio;
+      if (rfB.tentativo) datos.folioTentativo = true;
       datos.esBorrador  = false;
       datos.id_borrador = null;
       lista.unshift(datos);
@@ -2169,6 +2203,11 @@ async function guardarCotizacion() {
     // Eliminar borrador del mismo cliente si existe
     const idxBorrador = lista.findIndex(c => c.esBorrador && c.id_borrador === idBorrador);
     if (idxBorrador >= 0) lista.splice(idxBorrador, 1);
+
+    // Folio único reservado al guardar (atómico si hay servidor; local si no)
+    const rfN = await reservarFolio();
+    datos.folio = rfN.folio;
+    if (rfN.tentativo) datos.folioTentativo = true; else delete datos.folioTentativo;
 
     lista.unshift(datos);
     await saveCotizaciones(lista);
@@ -2891,6 +2930,9 @@ async function sincronizarSheets() {
         await storageSet('cotizaciones', lista);
         await renderCRM();
         btn.innerHTML = '✅ Sincronizado (' + lista.length + ')';
+        // Reconciliación: avisar si hay folios repetidos (por guardados sin conexión)
+        const dups = await detectarFoliosDuplicados();
+        if (dups.length) mostrarToast('⚠️ Folios duplicados: ' + dups.map(f => 'TEC-' + String(f).padStart(4,'0')).join(', ') + '. Revísalos.', 'error');
       } else {
         btn.innerHTML = '⚠️ Sheets vacío — datos locales intactos';
       }
