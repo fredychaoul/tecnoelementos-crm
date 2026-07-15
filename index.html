@@ -119,6 +119,20 @@
   .badge-won { background: var(--ok-tint); color: var(--ok); }
   .badge-lost { background: var(--lost-tint); color: var(--lost); }
 
+  /* Vigencia y seguimiento (semáforo funcional, apagado) */
+  .vig-chip { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: var(--r-pill); font-size: 10px; font-weight: 600; letter-spacing: .2px; white-space: nowrap; }
+  .vig-warn { background: var(--warn-tint); color: var(--warn); }
+  .vig-lost { background: var(--lost-tint); color: var(--lost); }
+  .vig-sent { background: var(--sent-tint); color: var(--sent); }
+
+  /* Banner de alertas del CRM (se calcula al renderizar; oculto si no hay nada) */
+  .crm-alert { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 14px; margin-bottom: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r); font-size: 12px; color: var(--ink-soft); }
+  .crm-alert .chipbtn { border: none; cursor: pointer; padding: 3px 10px; border-radius: var(--r-pill); font-size: 11px; font-weight: 600; font-family: var(--font); transition: transform .14s var(--ease-out), filter .14s var(--ease-out); }
+  .crm-alert .chipbtn:hover { filter: brightness(.96); }
+  .crm-alert .chipbtn:active { transform: scale(.97); }
+  .crm-alert .cerrar { margin-left: auto; background: none; border: none; cursor: pointer; color: var(--ink-faint); font-size: 14px; padding: 2px 6px; border-radius: 4px; }
+  .crm-alert .cerrar:hover { color: var(--ink); }
+
   /* CRM LISTA — filas expandibles + timeline de versiones */
   .crm-list { border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--surface); }
   .crm-head, .crmrow-main { display: grid; grid-template-columns: 150px 1.6fr 1.1fr 130px 120px; align-items: center; gap: 10px; }
@@ -647,7 +661,8 @@
       <button class="btn btn-outline" onclick="toggleDescuento()" id="btn-descuento">🏷️ Descuento</button>
     <button class="btn btn-dark" onclick="generarPDF()">📄 Generar PDF</button>
     <button class="btn btn-green" onclick="guardarCotizacion()">💾 Guardar en CRM</button>
-      <button class="btn btn-outline" onclick="guardarBorrador()" style="border-color:#b8860b;color:#b8860b;">📝 Borrador</button>
+      <button class="btn btn-outline" onclick="guardarBorrador()" style="border-color:var(--warn);color:var(--warn);">📝 Borrador</button>
+      <span id="autosave-hint" style="font-size:11px;color:var(--ink-faint);align-self:center;"></span>
   </div>
 </div>
 
@@ -667,6 +682,7 @@
       <div></div>
       <button class="btn btn-sm btn-export" onclick="exportarExcel()">📊 Exportar a Excel</button>
     </div>
+    <div id="crm-alertas"></div>
     <div class="search-bar">
       <input type="text" id="search-input" placeholder="🔍  Buscar por cliente, folio, producto..." oninput="filtrarCRM()">
       <button onclick="sincronizarSheets()" id="btn-sync" class="btn btn-dark btn-sm">☁️ Sincronizar</button>
@@ -676,6 +692,9 @@
         <option value="Enviada">Enviada</option>
         <option value="Ganada">Ganada</option>
         <option value="Perdida">Perdida</option>
+        <option value="__porvencer">Por vencer (≤5 días)</option>
+        <option value="__vencida">Vencidas</option>
+        <option value="__sinrespuesta">Enviadas sin respuesta</option>
       </select>
     </div>
     <div id="crm-container"></div>
@@ -781,7 +800,10 @@
 </div>
 
 <script>
-  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw5_mwWlDGl9f_wxzVqZT5jbJXyhO9Xg-gGyDdeQiBsF-BymVCV_LBsZ8F0w2QYawaZ/exec';
+  // Pasa por el proxy serverless (/api/sheets), que está detrás del Basic Auth
+  // y le agrega el secreto compartido. El navegador ya no habla directo con
+  // Google ni conoce la URL del Apps Script.
+  const SHEETS_URL = '/api/sheets';
 
 // ═══════════════════ BASE DE DATOS DE PRECIOS ═══════════════════
 // Precios USD: BODEN/CAPPA → lista × 0.60 × 0.90 × 0.88 = costo → ÷ 0.70 = PVP B2B (30% margen s/venta)
@@ -1993,13 +2015,13 @@ function mostrarToast(msg, tipo='info') {
   setTimeout(() => { t.style.opacity='0'; setTimeout(() => t.remove(), 300); }, 2800);
 }
 
-async function guardarBorrador() {
-  const datos = recopilarDatos();
-  if (!datos.cliente) { alert('Ingresa al menos el nombre del cliente'); return; }
-
+// Núcleo compartido por el guardado manual y el autoguardado. Empareja el
+// borrador existente por id_borrador (antes se buscaba por folio y nunca
+// coincidía, así que cada guardado duplicaba el borrador).
+async function _guardarBorradorCore(datos) {
+  const id = 'BORRADOR-' + datos.cliente.replace(/\s+/g, '-');
   const lista = await getCotizaciones();
-  // Buscar borrador existente del mismo cliente
-  const idxBorrador = lista.findIndex(c => c.folio === 'BORRADOR-' + datos.cliente.replace(/\s+/g,'-'));
+  const idxBorrador = lista.findIndex(c => c.esBorrador && (c.id_borrador === id || c.folio === id));
 
   const borrador = {
     ...datos,
@@ -2007,7 +2029,7 @@ async function guardarBorrador() {
     status: 'Borrador',
     fecha: new Date().toLocaleDateString('es-MX'),
     esBorrador: true,
-    id_borrador: 'BORRADOR-' + datos.cliente.replace(/\s+/g,'-'),
+    id_borrador: id,
   };
 
   if (idxBorrador >= 0) {
@@ -2015,8 +2037,14 @@ async function guardarBorrador() {
   } else {
     lista.unshift(borrador);
   }
-
   await saveCotizaciones(lista);
+}
+
+async function guardarBorrador() {
+  const datos = recopilarDatos();
+  if (!datos.cliente) { alert('Ingresa al menos el nombre del cliente'); return; }
+
+  await _guardarBorradorCore(datos);
   mostrarToast('📝 Borrador guardado — ' + datos.cliente, 'info');
 
   const btnB = document.querySelector('button[onclick="guardarBorrador()"]');
@@ -2026,6 +2054,31 @@ async function guardarBorrador() {
     setTimeout(() => { btnB.innerHTML = orig; }, 2000);
   }
 }
+
+// ── Autoguardado silencioso: cada 30 s y al ocultar/cerrar la pestaña. Solo
+//    para cotizaciones NUEVAS con cliente capturado; editar una existente no
+//    genera borradores. Nunca interrumpe la captura (sin toasts ni alerts).
+let _autosaveFirma = '';
+async function _autosaveBorrador() {
+  try {
+    if (!document.getElementById('page-nueva')?.classList.contains('active')) return;
+    if (window._editandoFolio) return;
+    const datos = recopilarDatos();
+    if (!datos.cliente) return;
+    const firma = JSON.stringify([datos.cliente, datos.proyecto, datos.total,
+      datos.productos, datos.instalacion, datos.observaciones]);
+    if (firma === _autosaveFirma) return; // nada cambió desde el último guardado
+    _autosaveFirma = firma;
+    await _guardarBorradorCore(datos);
+    const hint = document.getElementById('autosave-hint');
+    if (hint) hint.textContent = '💾 auto-guardado ' +
+      new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) { /* el autosave jamás debe romper la captura */ }
+}
+setInterval(_autosaveBorrador, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') _autosaveBorrador();
+});
 
 // ── Resumen de medidas cotizadas (cajas / ml / m²) en el formulario
 function actualizarResumenMedidas(med) {
@@ -2656,6 +2709,45 @@ async function generarPDF(cotData) {
 }
 
 // ═══════════════════ CRM ═══════════════════
+// ── Vigencia y seguimiento ──────────────────────────────────────────────
+// Misma vigencia que imprime el PDF ("Válida hasta"): emisión + 15 días.
+const CRM_VIGENCIA_DIAS = 15;
+const CRM_SIN_RESPUESTA_DIAS = 10;
+
+function parseFechaCot(c) {
+  if (c.fechaObj) { const d = new Date(c.fechaObj); if (!isNaN(d)) return d; }
+  const m = String(c.fecha || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null;
+}
+
+// Solo aplica a cotizaciones abiertas (Pendiente/Enviada). Devuelve null si no aplica.
+function vigenciaDe(c) {
+  if (c.esBorrador || c.status === 'Ganada' || c.status === 'Perdida') return null;
+  const f = parseFechaCot(c);
+  if (!f) return null;
+  const vence = new Date(f.getFullYear(), f.getMonth(), f.getDate() + CRM_VIGENCIA_DIAS);
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const dias = Math.round((vence - hoy) / 86400000);
+  if (dias < 0)  return { dias, estado: 'vencida' };
+  if (dias <= 5) return { dias, estado: 'por-vencer' };
+  return { dias, estado: 'ok' };
+}
+
+// Enviada hace más de N días y sigue abierta → hay que dar seguimiento.
+function sinRespuestaDe(c) {
+  if (c.esBorrador || c.status === 'Ganada' || c.status === 'Perdida') return null;
+  let f = null;
+  (c.versiones || []).forEach(v => {
+    if (!v.enviada) return;
+    const m = String(v.enviada).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) { const d = new Date(+m[3], +m[2] - 1, +m[1]); if (!f || d > f) f = d; }
+  });
+  if (!f && c.status === 'Enviada') f = parseFechaCot(c);
+  if (!f) return null;
+  const dias = Math.floor((Date.now() - f) / 86400000);
+  return dias > CRM_SIN_RESPUESTA_DIAS ? { dias } : null;
+}
+
 async function renderCRM() {
   const lista = await getCotizaciones();
   const query  = document.getElementById('search-input')?.value.toLowerCase() || '';
@@ -2682,15 +2774,40 @@ async function renderCRM() {
     const matchQ = !query || c.cliente.toLowerCase().includes(query) ||
       String(c.folio).includes(query) ||
       c.productos.some(p => p.nombre.toLowerCase().includes(query));
-    const matchS = !status || c.status === status;
+    let matchS;
+    if (status === '__porvencer')         matchS = vigenciaDe(c)?.estado === 'por-vencer';
+    else if (status === '__vencida')      matchS = vigenciaDe(c)?.estado === 'vencida';
+    else if (status === '__sinrespuesta') matchS = !!sinRespuestaDe(c);
+    else                                  matchS = !status || c.status === status;
     return matchQ && matchS;
   });
+
+  // Banner de seguimiento: qué requiere atención hoy (sobre TODA la lista)
+  const alertasEl = document.getElementById('crm-alertas');
+  if (alertasEl) {
+    const nPorVencer = lista.filter(c => vigenciaDe(c)?.estado === 'por-vencer').length;
+    const nVencidas  = lista.filter(c => vigenciaDe(c)?.estado === 'vencida').length;
+    const nSinResp   = lista.filter(c => !!sinRespuestaDe(c)).length;
+    if (window._alertasOff || (nPorVencer + nVencidas + nSinResp) === 0) {
+      alertasEl.innerHTML = '';
+    } else {
+      const setF = v => `document.getElementById('filter-status').value='${v}';filtrarCRM();`;
+      const chips = [];
+      if (nVencidas)  chips.push(`<button class="chipbtn vig-lost" onclick="${setF('__vencida')}">${nVencidas} vencida${nVencidas>1?'s':''}</button>`);
+      if (nPorVencer) chips.push(`<button class="chipbtn vig-warn" onclick="${setF('__porvencer')}">${nPorVencer} por vencer</button>`);
+      if (nSinResp)   chips.push(`<button class="chipbtn vig-sent" onclick="${setF('__sinrespuesta')}">${nSinResp} sin respuesta +${CRM_SIN_RESPUESTA_DIAS}d</button>`);
+      alertasEl.innerHTML = `<div class="crm-alert"><span>Requieren atención:</span>${chips.join('')}
+        <button class="cerrar" title="Ocultar por esta sesión" onclick="window._alertasOff=true;renderCRM();">✕</button></div>`;
+    }
+  }
 
   const badgeClass = { Pendiente:'badge-pending', Enviada:'badge-sent', Ganada:'badge-won', Perdida:'badge-lost' };
 
   if (filtered.length === 0) {
-    document.getElementById('crm-container').innerHTML = `
-      <div class="empty-state"><div class="icon">📋</div><p>No hay cotizaciones aún.<br>Crea tu primera desde "Nueva Cotización"</p></div>`;
+    const hayFiltro = query || status;
+    document.getElementById('crm-container').innerHTML = hayFiltro
+      ? `<div class="empty-state"><div class="icon">🔍</div><p>Sin resultados con este filtro.<br><a href="#" onclick="document.getElementById('search-input').value='';document.getElementById('filter-status').value='';filtrarCRM();return false;">Limpiar filtros</a></p></div>`
+      : `<div class="empty-state"><div class="icon">📋</div><p>No hay cotizaciones aún.<br>Crea tu primera desde "Nueva Cotización"</p></div>`;
     return;
   }
 
@@ -2713,6 +2830,14 @@ async function renderCRM() {
     const versiones = (c.versiones && c.versiones.length) ? c.versiones
       : [{ version: 1, fecha: c.fecha, total: c.total, enviada: null }];
     const verActual = c.version || versiones.length || 1;
+    const vig = vigenciaDe(c);
+    const sr  = sinRespuestaDe(c);
+    const vigChip = vig?.estado === 'vencida'
+      ? `<div class="vig-chip vig-lost">vencida hace ${Math.abs(vig.dias)}d</div>`
+      : vig?.estado === 'por-vencer'
+        ? `<div class="vig-chip vig-warn">${vig.dias === 0 ? 'vence hoy' : 'vence en ' + vig.dias + 'd'}</div>`
+        : '';
+    const srChip = sr ? `<div class="vig-chip vig-sent">sin respuesta · ${sr.dias}d</div>` : '';
     const tl = versiones.map((v, i) => {
       const prev = i > 0 ? versiones[i-1] : null;
       const delta = prev ? (Number(v.total) - Number(prev.total)) : 0;
@@ -2736,7 +2861,7 @@ async function renderCRM() {
         <div class="cli-cell">${c.cliente}<div class="sub">${prodSummary}</div></div>
         <div class="proj-cell">${c.proyecto||'—'}</div>
         <div class="tot-cell">${fmtMoney(c.simbolo, c.total)}</div>
-        <div class="r"><span class="badge ${badgeClass[c.status]||'badge-pending'}">${c.status}</span></div>
+        <div class="r"><span class="badge ${badgeClass[c.status]||'badge-pending'}">${c.status}</span>${vigChip}${srChip}</div>
       </div>
       <div class="crm-versions"><div class="crm-versions-in"><div class="vpanel">
         <div class="vhdr">Historial de versiones</div>
@@ -2859,7 +2984,7 @@ async function descartarBorrador(tr) {
   renderCRM();
 }
 
-async function filtrarCRM() { renderCRM(); }
+async function filtrarCRM() { await renderCRM(); }
 
 async function sincronizarSheets() {
   const btn = document.getElementById('btn-sync');
