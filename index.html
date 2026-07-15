@@ -323,13 +323,13 @@
     flex-direction: column !important;
     gap: 8px !important;
     padding: 14px !important;
-    background: #F8F8F8 !important;
+    background: var(--surface-2) !important;
     border-radius: 10px !important;
     margin-bottom: 10px !important;
-    border: 1px solid #E0E0E0 !important;
+    border: 1px solid var(--line) !important;
     border-bottom: none !important;
   }
-  .producto-row:nth-child(even) { background: #F8F8F8 !important; }
+  .producto-row:nth-child(even) { background: var(--surface-2) !important; }
   .producto-row input,
   .producto-row select {
     width: 100% !important;
@@ -343,7 +343,7 @@
     font-weight: 700 !important;
     text-align: left !important;
     padding: 6px 0 !important;
-    border-top: 1px solid #E8E8E8 !important;
+    border-top: 1px solid var(--line) !important;
     margin-top: 4px !important;
   }
   .btn-remove {
@@ -362,10 +362,10 @@
     flex-direction: column !important;
     gap: 8px !important;
     padding: 14px !important;
-    background: #F8FFF8 !important;
+    background: var(--ok-tint) !important;
     border-radius: 10px !important;
     margin-bottom: 10px !important;
-    border: 1px solid #E0EEE0 !important;
+    border: 1px solid var(--ok-tint) !important;
     border-bottom: none !important;
   }
   .inst-row > * { width: 100% !important; }
@@ -379,7 +379,7 @@
     font-weight: 700 !important;
     text-align: left !important;
     padding: 6px 0 !important;
-    border-top: 1px solid #D4EDD4 !important;
+    border-top: 1px solid var(--ok-tint) !important;
   }
   #inst-section .inst-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
 
@@ -454,7 +454,7 @@
 </head>
 <body>
 
-<div id="debug-bar" style="display:none;background:#e74c3c;color:white;padding:10px 20px;font-size:13px;font-weight:600;position:fixed;top:0;left:0;right:0;z-index:9999"></div>
+<div id="debug-bar" style="display:none;background:var(--lost);color:white;padding:10px 20px;font-size:13px;font-weight:600;position:fixed;top:0;left:0;right:0;z-index:9999"></div>
 <nav>
   <div class="brand">
     <svg class="chip" viewBox="379 379 322 322" xmlns="http://www.w3.org/2000/svg" aria-label="Tecnoelementos">
@@ -522,10 +522,10 @@
       </div>
     </div>
     <!-- Historial del cliente -->
-    <div id="historial-cliente" style="display:none;margin-top:14px;background:#F8F8F8;border-radius:8px;border:1px solid #E8E8E8;overflow:hidden;">
-      <div onclick="toggleHistorial()" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;user-select:none;" onmouseover="this.style.background='#F0F0F0'" onmouseout="this.style.background='transparent'">
-        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#888;">📋 Cotizaciones anteriores de este cliente</span>
-        <span id="historial-arrow" style="font-size:14px;color:#888;transition:transform .2s;">▲</span>
+    <div id="historial-cliente" style="display:none;margin-top:14px;background:var(--surface-2);border-radius:8px;border:1px solid var(--line);overflow:hidden;">
+      <div onclick="toggleHistorial()" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;user-select:none;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-faint);">📋 Cotizaciones anteriores de este cliente</span>
+        <span id="historial-arrow" style="font-size:14px;color:var(--ink-faint);transition:transform .2s;">▲</span>
       </div>
       <div id="historial-body" style="padding:0 14px 14px;">
         <div id="historial-lista"></div>
@@ -551,7 +551,7 @@
           <option value="cobrado">Se cobra el flete</option>
         </select>
         <div id="flete-monto-group" style="display:none;margin-top:8px">
-          <label style="font-size:10px;color:#888">Monto flete (+ IVA 16%)</label>
+          <label style="font-size:10px;color:var(--ink-faint)">Monto flete (+ IVA 16%)</label>
           <input type="number" id="flete-monto" value="0" min="0" step="0.01" oninput="recalcular()" placeholder="0.00" style="margin-top:4px;width:100%">
         </div>
       </div>
@@ -709,7 +709,7 @@
     #obra-activas-container > .obra-card { animation: obraIn .35s cubic-bezier(.2,.7,.2,1) both; }
     .obra-card { transition: box-shadow .25s ease, transform .25s ease; }
     .obra-card:hover { box-shadow:0 8px 24px rgba(0,0,0,.10); transform:translateY(-2px); }
-    .obra-bar-track { background:#ECECEC; border-radius:999px; height:10px; overflow:hidden; }
+    .obra-bar-track { background:var(--line); border-radius:999px; height:10px; overflow:hidden; }
     .obra-bar-fill { height:100%; border-radius:999px; transition: width .7s cubic-bezier(.4,0,.2,1); }
     .obra-pill { transition: transform .2s ease; display:inline-block; }
     .obra-card:hover .obra-pill { transform: scale(1.04); }
@@ -722,28 +722,28 @@
     .obra-btn:hover { transform: translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.16); }
     .obra-btn:active { transform: translateY(0); box-shadow:none; }
     .obra-input { transition: border-color .15s ease, box-shadow .15s ease; }
-    .obra-input:focus { outline:none; border-color:#1A1A1A; box-shadow:0 0 0 3px rgba(26,26,26,.10); }
+    .obra-input:focus { outline:none; border-color:var(--ink); box-shadow:0 0 0 3px rgba(26,26,26,.10); }
     .obra-retirar { transition: color .15s ease; }
-    .obra-retirar:hover { color:#8B2020 !important; }
+    .obra-retirar:hover { color:var(--lost) !important; }
     #obra-disponibles-container tbody tr { transition: background .15s ease; }
-    #obra-disponibles-container tbody tr:hover { background:#FAFAFA; }
+    #obra-disponibles-container tbody tr:hover { background:var(--surface-2); }
     #page-obra .stat { transition: transform .2s ease, box-shadow .2s ease; }
     #page-obra .stat:hover { transform: translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,.08); }
-    .obra-fila { display:flex; align-items:center; gap:12px; padding:11px 14px; border:1px solid #EEE; border-radius:10px; margin-bottom:8px; cursor:pointer; background:#fff; transition: box-shadow .18s ease, border-color .18s ease, transform .12s ease; }
-    .obra-fila:hover { box-shadow:0 4px 14px rgba(0,0,0,.07); border-color:#ddd; transform:translateY(-1px); }
+    .obra-fila { display:flex; align-items:center; gap:12px; padding:11px 14px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; cursor:pointer; background:#fff; transition: box-shadow .18s ease, border-color .18s ease, transform .12s ease; }
+    .obra-fila:hover { box-shadow:0 4px 14px rgba(0,0,0,.07); border-color:var(--line); transform:translateY(-1px); }
     .obra-detalle { margin:-2px 0 14px; animation: obraIn .3s ease both; }
     .obra-detalle > .obra-card { margin-bottom:0; }
-    .obra-fecha { border:1px solid #ddd; border-radius:5px; padding:2px 5px; font-size:11px; font-family:inherit; color:#555; }
-    .obra-card-lista { border:1px solid #ECECEC; border-radius:12px; padding:14px 16px; margin-bottom:10px; cursor:pointer; background:#fff; transition:box-shadow .18s ease, border-color .18s ease, transform .12s ease; }
-    .obra-card-lista:hover { box-shadow:0 4px 14px rgba(0,0,0,.07); border-color:#ddd; transform:translateY(-1px); }
-    .obra-card-lista.open { border-color:#1A1A1A; }
-    .obra-tabs { display:flex; gap:4px; background:#F2F2F2; border-radius:10px; padding:4px; }
-    .obra-tab-btn { flex:1; text-align:center; font-size:12.5px; font-weight:600; padding:8px 0; border:none; border-radius:7px; background:none; color:#888; cursor:pointer; transition:all .15s; }
-    .obra-tab-btn.on { background:#fff; color:#1A1A1A; box-shadow:0 1px 3px rgba(0,0,0,.12); }
-    .obra-qbtn { flex:1; min-width:40px; text-align:center; font-size:13px; padding:10px 0; border:1px solid #E0E0E0; border-radius:9px; background:#fff; cursor:pointer; transition:all .12s; color:#555; }
-    .obra-qbtn:hover { border-color:#999; }
-    .obra-qbtn.on { background:#1A1A1A; color:#fff; border-color:#1A1A1A; font-weight:700; }
-    .obra-av-row { padding:12px 0; border-bottom:1px solid #F2F2F2; }
+    .obra-fecha { border:1px solid var(--line); border-radius:5px; padding:2px 5px; font-size:11px; font-family:inherit; color:var(--ink-soft); }
+    .obra-card-lista { border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:10px; cursor:pointer; background:#fff; transition:box-shadow .18s ease, border-color .18s ease, transform .12s ease; }
+    .obra-card-lista:hover { box-shadow:0 4px 14px rgba(0,0,0,.07); border-color:var(--line); transform:translateY(-1px); }
+    .obra-card-lista.open { border-color:var(--ink); }
+    .obra-tabs { display:flex; gap:4px; background:var(--surface-2); border-radius:10px; padding:4px; }
+    .obra-tab-btn { flex:1; text-align:center; font-size:12.5px; font-weight:600; padding:8px 0; border:none; border-radius:7px; background:none; color:var(--ink-faint); cursor:pointer; transition:all .15s; }
+    .obra-tab-btn.on { background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.12); }
+    .obra-qbtn { flex:1; min-width:40px; text-align:center; font-size:13px; padding:10px 0; border:1px solid var(--line); border-radius:9px; background:#fff; cursor:pointer; transition:all .12s; color:var(--ink-soft); }
+    .obra-qbtn:hover { border-color:var(--ink-faint); }
+    .obra-qbtn.on { background:var(--ink); color:#fff; border-color:var(--ink); font-weight:700; }
+    .obra-av-row { padding:12px 0; border-bottom:1px solid var(--surface-2); }
     .obra-av-row:last-child { border-bottom:none; }
   </style>
   <div class="stats" style="grid-template-columns:repeat(4,1fr)">
@@ -763,15 +763,15 @@
 
   <div class="card" id="obra-terminadas-card" style="display:none">
     <h2 style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:none;margin-bottom:0;padding-bottom:0" onclick="obraToggleTerminadas()">
-      <span>✅ Terminadas <span id="obra-term-count" style="font-size:12px;color:#888;font-weight:400"></span></span>
-      <span id="obra-term-chevron" style="font-size:13px;color:#aaa">▸</span>
+      <span>✅ Terminadas <span id="obra-term-count" style="font-size:12px;color:var(--ink-faint);font-weight:400"></span></span>
+      <span id="obra-term-chevron" style="font-size:13px;color:var(--ink-faint)">▸</span>
     </h2>
     <div id="obra-terminadas-container" style="display:none;margin-top:18px"></div>
   </div>
 
   <div class="card">
     <h2>Cotizaciones ganadas por activar</h2>
-    <p style="font-size:12px;color:#888;margin-bottom:16px">Solo aparecen las cotizaciones marcadas como <strong>Ganada</strong> en el CRM. Al activar, se detectan automáticamente los m² y las partidas de mano de obra.</p>
+    <p style="font-size:12px;color:var(--ink-faint);margin-bottom:16px">Solo aparecen las cotizaciones marcadas como <strong>Ganada</strong> en el CRM. Al activar, se detectan automáticamente los m² y las partidas de mano de obra.</p>
     <div id="obra-disponibles-container"></div>
   </div>
 </div>
@@ -783,8 +783,8 @@
     <div id="modal-contenido"></div>
     <div class="modal-actions" style="margin-top:20px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:8px;flex:1">
-        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px">Estatus:</label>
-        <select id="modal-status" onchange="cambiarStatus()" style="padding:8px 12px;border-radius:8px;border:1.5px solid #E0E0E0;font-size:13px;">
+        <label style="font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.5px">Estatus:</label>
+        <select id="modal-status" onchange="cambiarStatus()" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--line);font-size:13px;">
           <option>Pendiente</option>
           <option>Enviada</option>
           <option>Ganada</option>
@@ -792,9 +792,9 @@
         </select>
       </div>
       <button class="btn btn-outline btn-sm" onclick="cerrarModal()">Cerrar</button>
-      <button class="btn btn-sm" id="btn-editar-cot" style="background:#E8C96B;color:#1A1A1A;border:none;font-weight:700" onclick="editarCotizacion()">✏️ Editar</button>
+      <button class="btn btn-sm" id="btn-editar-cot" style="background:var(--warn);color:var(--ink);border:none;font-weight:700" onclick="editarCotizacion()">✏️ Editar</button>
       <button class="btn btn-dark btn-sm" onclick="regenerarPDF()">📄 Regenerar PDF</button>
-      <button class="btn btn-sm" onclick="ocGenerar(modalCotizacion)" style="background:#E8943A;color:#fff;border:none;">📦 Generar OC</button>
+      <button class="btn btn-sm" onclick="ocGenerar(modalCotizacion)" style="background:var(--warn);color:#fff;border:none;">📦 Generar OC</button>
     </div>
   </div>
 </div>
@@ -1587,8 +1587,8 @@ function agregarProducto() {
     <select onchange="autoFill('${id}')" id="${id}-prod">
       <option value="">— Modelo —</option>
     </select>
-    <input type="text" id="${id}-clave" placeholder="Clave" readonly style="background:#f8f8f8;">
-    <input type="text" id="${id}-formato" placeholder="Formato / Especificación" readonly style="background:#f8f8f8;">
+    <input type="text" id="${id}-clave" placeholder="Clave" readonly style="background:var(--surface-2);">
+    <input type="text" id="${id}-formato" placeholder="Formato / Especificación" readonly style="background:var(--surface-2);">
     <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
       <input type="number" id="${id}-cant" value="1" min="0" step="0.001" oninput="actualizarCajas('${id}');recalcular()">
       <div class="caja-hint" id="${id}-caja-hint"></div>
@@ -1596,13 +1596,13 @@ function agregarProducto() {
     <input type="text" id="${id}-unidad" placeholder="M2" style="text-align:center;">
     <div style="display:flex;align-items:center;gap:3px;min-width:0;">
       <input type="number" id="${id}-pvp" value="0" step="0.01" oninput="this.dataset.editadoManual='1';recalcular()" style="flex:1;min-width:0;" title="Precio editable — puedes modificarlo manualmente">
-      <span id="${id}-moneda-badge" style="font-size:9px;background:#e8f4fd;color:#1a5276;padding:2px 4px;border-radius:4px;font-weight:bold;min-width:26px;text-align:center;flex-shrink:0;">USD</span>
+      <span id="${id}-moneda-badge" style="font-size:9px;background:var(--sent-tint);color:var(--sent);padding:2px 4px;border-radius:4px;font-weight:bold;min-width:26px;text-align:center;flex-shrink:0;">USD</span>
     </div>
     <div class="total-cell" id="${id}-total">$0.00</div>
     <button class="btn-remove" onclick="quitarFila('${id}')">×</button>
   </div>
   <div id="${id}-margen-wrap" style="text-align:right;padding:1px 10px 4px;margin-top:-2px;">
-    <span id="${id}-margen" style="font-size:10px;font-weight:700;color:#aaa;background:#f0f0f0;border-radius:3px;padding:1px 6px;" title="Margen sobre venta">—%</span>
+    <span id="${id}-margen" style="font-size:10px;font-weight:700;color:var(--ink-faint);background:var(--surface-2);border-radius:3px;padding:1px 6px;" title="Margen sobre venta">—%</span>
   </div>`;
   document.getElementById('productos-body').insertAdjacentHTML('beforeend', rowHtml);
 }
@@ -1656,7 +1656,7 @@ function autoFill(id) {
   if (margenElAF && prodDataM?.costo && pvp > 0) {
     const costoConvAF = monedaCot === 'MXN' ? prodDataM.costo * tc : prodDataM.costo;
     const margenPctAF = (pvp - costoConvAF) / pvp * 100;
-    const colorAF = margenPctAF >= 35 ? '#27ae60' : margenPctAF >= 25 ? '#e67e22' : '#e74c3c';
+    const colorAF = margenPctAF >= 35 ? 'var(--ok)' : margenPctAF >= 25 ? 'var(--warn)' : 'var(--lost)';
     margenElAF.textContent = margenPctAF.toFixed(1) + '%';
     margenElAF.style.color = colorAF;
     margenElAF.style.fontWeight = '700';
@@ -1732,14 +1732,14 @@ function recalcular() {
       if (costoUSD > 0) {
         const costoConv = moneda === 'MXN' ? costoUSD * tc : costoUSD;
         const margenPct = (pvp - costoConv) / pvp * 100;
-        const colorM    = margenPct >= 35 ? '#27ae60' : margenPct >= 25 ? '#e67e22' : '#e74c3c';
+        const colorM    = margenPct >= 35 ? 'var(--ok)' : margenPct >= 25 ? 'var(--warn)' : 'var(--lost)';
         margenEl.textContent = margenPct.toFixed(1) + '%';
         margenEl.style.color = colorM;
         margenEl.style.fontWeight = '700';
         margenEl.title = `Costo: ${simbolo}${costoConv.toFixed(2)} | Margen: ${margenPct.toFixed(1)}%`;
       } else {
         margenEl.textContent = '—';
-        margenEl.style.color = '#888';
+        margenEl.style.color = 'var(--ink-faint)';
       }
     }
   });
@@ -1788,7 +1788,7 @@ function recalcular() {
   const margenGlobal = ventaTotal > 0 ? ((ventaTotal - costoTotal) / ventaTotal * 100) : 0;
   const margenGlobalEl = document.getElementById('t-margen-global');
   if (margenGlobalEl && ventaTotal > 0) {
-    const colorG = margenGlobal >= 35 ? '#27ae60' : margenGlobal >= 25 ? '#e67e22' : '#e74c3c';
+    const colorG = margenGlobal >= 35 ? 'var(--ok)' : margenGlobal >= 25 ? 'var(--warn)' : 'var(--lost)';
     margenGlobalEl.textContent = margenGlobal.toFixed(1) + '%';
     margenGlobalEl.style.color = colorG;
   }
@@ -1834,8 +1834,8 @@ function agregarManual() {
   const sym = monedaCot === 'MXN' ? '$' : 'USD ';
   const html = `
   <div class="producto-row manual-row" id="${id}">
-    <input type="text" id="${id}-prod" placeholder="Descripción del producto" style="border-left:3px solid #F39C12;">
-    <input type="text" id="${id}-linea-display" placeholder="—" readonly style="background:#FFF3CD;font-size:10px;color:#856404;text-align:center;font-weight:700;" value="MANUAL">
+    <input type="text" id="${id}-prod" placeholder="Descripción del producto" style="border-left:3px solid var(--warn);">
+    <input type="text" id="${id}-linea-display" placeholder="—" readonly style="background:var(--warn-tint);font-size:10px;color:var(--warn);text-align:center;font-weight:700;" value="MANUAL">
     <input type="text" id="${id}-clave" placeholder="Clave / Ref.">
     <input type="text" id="${id}-formato" placeholder="Especificación / Formato">
     <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
@@ -1848,7 +1848,7 @@ function agregarManual() {
         oninput="this.dataset.editadoManual='1';recalcular()"
         data-pvp-base="0" data-moneda="${monedaCot}"
         style="flex:1;min-width:0;" title="Precio editable">
-      <span id="${id}-moneda-badge" style="font-size:9px;background:#e8f4fd;color:#1a5276;padding:2px 4px;border-radius:4px;font-weight:bold;min-width:26px;text-align:center;flex-shrink:0;">${sym.trim() || 'MXN'}</span>
+      <span id="${id}-moneda-badge" style="font-size:9px;background:var(--sent-tint);color:var(--sent);padding:2px 4px;border-radius:4px;font-weight:bold;min-width:26px;text-align:center;flex-shrink:0;">${sym.trim() || 'MXN'}</span>
     </div>
     <div class="total-cell" id="${id}-total">$0.00</div>
     <button class="btn-remove" onclick="quitarFila('${id}')">×</button>
@@ -2004,15 +2004,41 @@ function recopilarDatos() {
   })();
   // ═══════════════════════════════════════════════
 
-function mostrarToast(msg, tipo='info') {
+function mostrarToast(msg, tipo='info', duracion=2800) {
   const t = document.createElement('div');
-  const colores = { success:'#1E6B3C', error:'#8B2020', info:'#1A3A6B' };
+  const colores = { success:'var(--ok)', error:'var(--lost)', info:'var(--sent)' };
   t.style.cssText = `position:fixed;bottom:24px;right:24px;background:${colores[tipo]||colores.info};color:#fff;
-    padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:99999;
+    padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:99999;max-width:420px;
     box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:opacity .3s;`;
   t.textContent = msg;
   document.body.appendChild(t);
-  setTimeout(() => { t.style.opacity='0'; setTimeout(() => t.remove(), 300); }, 2800);
+  setTimeout(() => { t.style.opacity='0'; setTimeout(() => t.remove(), 300); }, duracion);
+}
+
+// Confirmación de marca (reemplaza a confirm() nativo). Devuelve Promise<bool>.
+function confirmar(mensaje, txtOk = 'Sí, continuar', txtNo = 'Cancelar') {
+  return new Promise(resolve => {
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(20,22,26,.45);z-index:var(--z-modal);display:flex;align-items:center;justify-content:center;';
+    ov.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow);padding:24px 26px;width:min(92vw,380px);">
+        <div style="font-size:14px;color:var(--ink);line-height:1.5;margin-bottom:18px;">${mensaje}</div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button data-r="0" class="btn btn-outline btn-sm">${txtNo}</button>
+          <button data-r="1" class="btn btn-dark btn-sm">${txtOk}</button>
+        </div>
+      </div>`;
+    const cerrar = (r) => { ov.remove(); document.removeEventListener('keydown', esc); resolve(r); };
+    const esc = (e) => { if (e.key === 'Escape') cerrar(false); };
+    ov.addEventListener('click', (e) => {
+      if (e.target === ov) return cerrar(false);
+      const b = e.target.closest('button[data-r]');
+      if (b) cerrar(b.dataset.r === '1');
+    });
+    document.addEventListener('keydown', esc);
+    document.body.appendChild(ov);
+    ov.querySelector('button[data-r="1"]').focus();
+  });
 }
 
 // Núcleo compartido por el guardado manual y el autoguardado. Empareja el
@@ -2042,7 +2068,7 @@ async function _guardarBorradorCore(datos) {
 
 async function guardarBorrador() {
   const datos = recopilarDatos();
-  if (!datos.cliente) { alert('Ingresa al menos el nombre del cliente'); return; }
+  if (!datos.cliente) { mostrarToast('Ingresa al menos el nombre del cliente', 'error'); return; }
 
   await _guardarBorradorCore(datos);
   mostrarToast('📝 Borrador guardado — ' + datos.cliente, 'info');
@@ -2110,8 +2136,8 @@ function firmaCotizacion(c) {
 
 async function guardarCotizacion() {
   const datos = recopilarDatos();
-  if (!datos.cliente) { alert('Por favor ingresa el nombre del cliente'); return; }
-  if (datos.productos.length === 0 && (!datos.instalacion || datos.instalacion.length === 0)) { alert('Agrega al menos un producto o servicio de instalación'); return; }
+  if (!datos.cliente) { mostrarToast('Por favor ingresa el nombre del cliente', 'error'); return; }
+  if (datos.productos.length === 0 && (!datos.instalacion || datos.instalacion.length === 0)) { mostrarToast('Agrega al menos un producto o servicio de instalación', 'error'); return; }
 
   // Si viene de un borrador, eliminar el borrador de la lista
   const idBorrador = 'BORRADOR-' + datos.cliente.replace(/\s+/g,'-');
@@ -2195,7 +2221,7 @@ async function guardarCotizacion() {
         : (window._huboCambioVersion
             ? '✅ ' + folioTxt + ' guardada como v' + window._ultimaVersionGuardada
             : '✅ ' + folioTxt + ' actualizada (sin cambios, sigue v' + window._ultimaVersionGuardada + ')');
-      btnG.style.background = '#b8860b';
+      btnG.style.background = 'var(--warn)';
       setTimeout(() => { btnG.innerHTML = origTxt; btnG.style.background = ''; }, 2500);
     }
   } else {
@@ -2218,7 +2244,7 @@ async function guardarCotizacion() {
     if (btnG) {
       const origTxt = btnG.innerHTML;
       btnG.innerHTML = '✅ Guardada TEC-' + String(datos.folio).padStart(4,'0');
-      btnG.style.background = '#219a52';
+      btnG.style.background = 'var(--ok)';
       setTimeout(() => { btnG.innerHTML = origTxt; btnG.style.background = ''; }, 2500);
     }
   }
@@ -2265,7 +2291,7 @@ async function actualizarTC() {
 // ═══════════════════ GENERAR PDF ═══════════════════
 async function generarPDF(cotData) {
   const datos = cotData || recopilarDatos();
-  if (!cotData && !datos.cliente) { alert('Ingresa el nombre del cliente'); return; }
+  if (!cotData && !datos.cliente) { mostrarToast('Ingresa el nombre del cliente', 'error'); return; }
 
   const version = datos.version || 1;   // sello y nombre de archivo con versión
 
@@ -2970,7 +2996,7 @@ async function verDiffVersion(ev, folio, i) {
 }
 
 async function descartarBorrador(tr) {
-  if (!confirm('¿Descartar este borrador?')) return;
+  if (!await confirmar('¿Descartar este borrador?', 'Sí, descartar')) return;
   const idBorrador = tr.dataset.idBorrador || '';
   const cliente    = tr.dataset.clienteBorrador || '';
   const lista = await getCotizaciones();
@@ -3036,9 +3062,9 @@ async function verDetalle(folio) {
 
   const prods = cot.productos.map(p => `
     <tr>
-      <td style="font-weight:600">${p.nombre}${p.manual ? ' <span style="font-size:9px;background:#FFF3CD;color:#856404;padding:1px 5px;border-radius:8px;font-weight:700">MANUAL</span>' : ''}</td>
-      <td style="color:#666;font-size:11px">${p.clave||'—'}</td>
-      <td style="color:#666;font-size:11px">${p.formato||'—'}</td>
+      <td style="font-weight:600">${p.nombre}${p.manual ? ' <span style="font-size:9px;background:var(--warn-tint);color:var(--warn);padding:1px 5px;border-radius:8px;font-weight:700">MANUAL</span>' : ''}</td>
+      <td style="color:var(--ink-soft);font-size:11px">${p.clave||'—'}</td>
+      <td style="color:var(--ink-soft);font-size:11px">${p.formato||'—'}</td>
       <td style="text-align:center">${Number(p.cantidad).toFixed(2)} ${p.unidad}</td>
       <td style="text-align:right">${cot.simbolo}${Number(p.pvp_final).toFixed(2)}</td>
       <td style="text-align:right;font-weight:700">${cot.simbolo}${Number(p.total).toLocaleString('es-MX',{minimumFractionDigits:2})}</td>
@@ -3062,13 +3088,13 @@ async function verDetalle(folio) {
         <thead><tr><th>Producto</th><th>Clave</th><th>Formato</th><th>Cant.</th><th>P.Unit</th><th>Total</th></tr></thead>
         <tbody>${prods}</tbody>
       </table>
-      ${cot.flete_escenario==='cobrado'&&cot.flete_monto>0 ? `<div style="text-align:right;font-size:12px;color:#666;margin-top:6px">Flete: ${cot.simbolo}${Number(cot.flete_monto).toFixed(2)}</div>` : ''}
+      ${cot.flete_escenario==='cobrado'&&cot.flete_monto>0 ? `<div style="text-align:right;font-size:12px;color:var(--ink-soft);margin-top:6px">Flete: ${cot.simbolo}${Number(cot.flete_monto).toFixed(2)}</div>` : ''}
       <div class="total-strip">
         <span>Subtotal ${cot.simbolo}${Number(cot.subtotal).toLocaleString('es-MX',{minimumFractionDigits:2})} + IVA ${cot.simbolo}${Number(cot.iva).toLocaleString('es-MX',{minimumFractionDigits:2})}</span>
         <span>${cot.simbolo}${Number(cot.total).toLocaleString('es-MX',{minimumFractionDigits:2})}</span>
       </div>
     </div>
-    ${cot.observaciones ? `<div class="modal-section"><h4>Observaciones</h4><p style="font-size:13px;color:#555;line-height:1.6">${cot.observaciones}</p></div>` : ''}`;
+    ${cot.observaciones ? `<div class="modal-section"><h4>Observaciones</h4><p style="font-size:13px;color:var(--ink-soft);line-height:1.6">${cot.observaciones}</p></div>` : ''}`;
 
   document.getElementById('modal-detalle').classList.add('open');
 }
@@ -3144,7 +3170,7 @@ async function editarCotizacion() {
           <input type="text" id="${id}-prod" value="${escHtml(p.nombre)}" style="flex:1">
           <span class="badge-manual">MANUAL</span>
         </div>
-        <input type="text" id="${id}-clave" value="${escHtml(p.clave||'')}" style="background:#FFF8E8">
+        <input type="text" id="${id}-clave" value="${escHtml(p.clave||'')}" style="background:var(--warn-tint)">
         <input type="text" id="${id}-formato" value="${escHtml(p.formato||'')}">
         <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
           <input type="number" id="${id}-cant" value="${p.cantidad}" min="0" step="0.001" oninput="actualizarCajas('${id}');recalcular()">
@@ -3152,14 +3178,14 @@ async function editarCotizacion() {
         </div>
         <input type="text" id="${id}-unidad" value="${escHtml(p.unidad||'M2')}">
         <div style="display:flex;align-items:center;gap:4px;">
-          <span style="font-size:10px;color:#888;font-weight:600">${sym}</span>
+          <span style="font-size:10px;color:var(--ink-faint);font-weight:600">${sym}</span>
           <input type="number" id="${id}-pvp" value="${p.pvp_final}" min="0" step="0.01" oninput="this.dataset.editadoManual='1';recalcular()" data-pvp-base="${p.pvp_final}" data-moneda="${monedaCot}" data-editado-manual="1" data-costo="${PRODUCTOS.find(x => x.modelo === p.nombre)?.costo || 0}" style="flex:1" title="Precio editable">
         </div>
         <div class="total-cell" id="${id}-total">$0.00</div>
         <button class="btn-remove" onclick="quitarFila('${id}')">×</button>
       </div>
       <div id="${id}-margen-wrap" style="text-align:right;padding:1px 10px 4px;margin-top:-2px;">
-        <span id="${id}-margen" style="font-size:10px;font-weight:700;color:#aaa;background:#f0f0f0;border-radius:3px;padding:1px 6px;" title="Margen sobre venta">—%</span>
+        <span id="${id}-margen" style="font-size:10px;font-weight:700;color:var(--ink-faint);background:var(--surface-2);border-radius:3px;padding:1px 6px;" title="Margen sobre venta">—%</span>
       </div>`;
       document.getElementById('productos-body').insertAdjacentHTML('beforeend', html);
 
@@ -3190,8 +3216,8 @@ async function editarCotizacion() {
           <option value="">— Modelo —</option>
           ${modelosOpts}
         </select>
-        <input type="text" id="${id}-clave" value="${escHtml(p.clave||'')}" readonly style="background:#f8f8f8;">
-        <input type="text" id="${id}-formato" value="${escHtml(p.formato||'')}" readonly style="background:#f8f8f8;">
+        <input type="text" id="${id}-clave" value="${escHtml(p.clave||'')}" readonly style="background:var(--surface-2);">
+        <input type="text" id="${id}-formato" value="${escHtml(p.formato||'')}" readonly style="background:var(--surface-2);">
         <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
           <input type="number" id="${id}-cant" value="${p.cantidad}" min="0" step="0.001" oninput="actualizarCajas('${id}');recalcular()">
           <div class="caja-hint" id="${id}-caja-hint"></div>
@@ -3199,13 +3225,13 @@ async function editarCotizacion() {
         <input type="text" id="${id}-unidad" value="${escHtml(p.unidad||'')}" style="text-align:center;">
         <div style="display:flex;align-items:center;gap:3px;min-width:0;">
           <input type="number" id="${id}-pvp" value="${p.pvp_final}" step="0.01" oninput="this.dataset.editadoManual='1';recalcular()" data-pvp-base="${p.pvp_base || p.pvp_final}" data-moneda="${p.moneda_prod || cot.moneda||'USD'}" data-editado-manual="1" data-costo="${PRODUCTOS.find(x => x.modelo === p.nombre)?.costo || 0}" style="flex:1;min-width:0;" title="Precio editable">
-          <span style="font-size:9px;background:#e8f4fd;color:#1a5276;padding:2px 4px;border-radius:4px;font-weight:bold;min-width:26px;text-align:center;flex-shrink:0;">${monedaBadge}</span>
+          <span style="font-size:9px;background:var(--sent-tint);color:var(--sent);padding:2px 4px;border-radius:4px;font-weight:bold;min-width:26px;text-align:center;flex-shrink:0;">${monedaBadge}</span>
         </div>
         <div class="total-cell" id="${id}-total">$0.00</div>
         <button class="btn-remove" onclick="quitarFila('${id}')">×</button>
       </div>
       <div id="${id}-margen-wrap" style="text-align:right;padding:1px 10px 4px;margin-top:-2px;">
-        <span id="${id}-margen" style="font-size:10px;font-weight:700;color:#aaa;background:#f0f0f0;border-radius:3px;padding:1px 6px;" title="Margen sobre venta">—%</span>
+        <span id="${id}-margen" style="font-size:10px;font-weight:700;color:var(--ink-faint);background:var(--surface-2);border-radius:3px;padding:1px 6px;" title="Margen sobre venta">—%</span>
       </div>`;
       document.getElementById('productos-body').insertAdjacentHTML('beforeend', html);
     }
@@ -3240,7 +3266,7 @@ async function editarCotizacion() {
         <option value="herringbone"${s.patron==='herringbone'?' selected':''}>Herringbone (+)</option>
       </select>
       <input type="number" id="${id}-cant" value="${s.cantidad}" min="0" step="0.01" oninput="recalcularInst()">
-      <input type="number" id="${id}-precio" value="${s.precio_unit}" step="0.01" oninput="recalcularInst()" style="background:#FFFDE7">
+      <input type="number" id="${id}-precio" value="${s.precio_unit}" step="0.01" oninput="recalcularInst()" style="background:var(--warn-tint)">
       <div class="total-cell" id="${id}-total">$0.00</div>
       <button class="btn-remove" onclick="quitarInst('${id}')">×</button>
     </div>`;
@@ -3281,12 +3307,12 @@ function mostrarBannerEdicion(folio, cliente) {
   if (!banner) {
     banner = document.createElement('div');
     banner.id = 'edit-banner';
-    banner.style.cssText = 'background:#E8C96B;color:#1A1A1A;padding:10px 32px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;';
+    banner.style.cssText = 'background:var(--warn);color:var(--ink);padding:10px 32px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;';
     document.querySelector('nav').insertAdjacentElement('afterend', banner);
   }
   banner.innerHTML = `
     <span>✏️ Editando cotización <strong>TEC-${String(folio).padStart(4,'0')}</strong> — ${cliente} &nbsp;|&nbsp; Al guardar, si hay cambios se creará una <strong>nueva versión</strong> (el folio se mantiene).</span>
-    <button onclick="cancelarEdicion()" style="background:#1A1A1A;color:white;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer">✕ Cancelar edición</button>
+    <button onclick="cancelarEdicion()" style="background:var(--ink);color:white;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer">✕ Cancelar edición</button>
   `;
 }
 
@@ -3306,7 +3332,7 @@ function cancelarEdicion() {
 // ═══════════════════ EXPORTAR EXCEL (CSV) ═══════════════════
 async function exportarExcel() {
   const lista = await getCotizaciones();
-  if (lista.length === 0) { alert('No hay cotizaciones guardadas.'); return; }
+  if (lista.length === 0) { mostrarToast('No hay cotizaciones guardadas.', 'error'); return; }
 
   const BOM = '﻿'; // para que Excel abra bien con acentos
   const sep = ',';
@@ -3375,7 +3401,7 @@ function agregarInstalacion() {
       <option value="herringbone">Herringbone (+)</option>
     </select>
     <input type="number" id="${id}-cant" value="1" min="0" step="0.01" oninput="recalcularInst()">
-    <input type="number" id="${id}-precio" value="0" step="0.01" oninput="recalcularInst()" style="background:#FFFDE7">
+    <input type="number" id="${id}-precio" value="0" step="0.01" oninput="recalcularInst()" style="background:var(--warn-tint)">
     <div class="total-cell" id="${id}-total">$0.00</div>
     <button class="btn-remove" onclick="quitarInst('${id}')">×</button>
   </div>`;
@@ -3475,10 +3501,10 @@ function actualizarCajas(id) {
   const m2Final = cajasFinal * prod.caja;
 
   if (Math.abs(m2Final - m2Actual) < 0.001) {
-    hint.innerHTML = `✓ ${cajasFinal} cajas exactas` + (esPar ? ' <span style="color:#E8A87C;font-size:9px;">(número par ✓)</span>' : '');
+    hint.innerHTML = `✓ ${cajasFinal} cajas exactas` + (esPar ? ' <span style="color:var(--warn);font-size:9px;">(número par ✓)</span>' : '');
     hint.className = 'caja-hint visible ok';
   } else {
-    const parLabel = esPar ? ` <span style="color:#E8A87C;font-size:9px;">⚠️ par obligatorio</span>` : '';
+    const parLabel = esPar ? ` <span style="color:var(--warn);font-size:9px;">⚠️ par obligatorio</span>` : '';
     hint.innerHTML = `${cajasExactas.toFixed(1)} cajas → <span class="caja-redondear" onclick="redondearCajas('${id}', ${m2Final})">${cajasFinal} cajas = ${m2Final.toFixed(3)} m²</span>${parLabel}`;
     hint.className = 'caja-hint visible';
   }
@@ -3509,8 +3535,8 @@ async function sugerirCliente(val) {
 
   dd.innerHTML = matches.map(nombre => `
     <div onclick="seleccionarCliente('${nombre.replace(/'/g, "\'")}')"
-      style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f0f0;"
-      onmouseover="this.style.background='#f5f5f5'"
+      style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--surface-2);"
+      onmouseover="this.style.background='var(--surface-2)'"
       onmouseout="this.style.background='white'">
       ${nombre}
     </div>`).join('');
@@ -3583,7 +3609,7 @@ async function seleccionarCliente(nombre) {
   histLista.innerHTML = `
     <table style="width:100%;border-collapse:collapse;font-size:12px;">
       <thead>
-        <tr style="background:#1A1A1A;color:white;">
+        <tr style="background:var(--ink);color:white;">
           <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;">Producto</th>
           <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;">Última Cot.</th>
           <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;">P.Unit</th>
@@ -3596,16 +3622,16 @@ async function seleccionarCliente(nombre) {
         ${filas.map((f, i) => {
           const ult   = f.apariciones[0];
           const veces = f.apariciones.length;
-          const mgColor = ult.margen >= 35 ? '#27ae60' : ult.margen >= 25 ? '#e67e22' : '#e74c3c';
-          const bg = i % 2 === 0 ? '#fff' : '#F8F8F8';
-          return `<tr style="background:${bg};border-bottom:1px solid #EEE;">
+          const mgColor = ult.margen >= 35 ? 'var(--ok)' : ult.margen >= 25 ? 'var(--warn)' : 'var(--lost)';
+          const bg = i % 2 === 0 ? '#fff' : 'var(--surface-2)';
+          return `<tr style="background:${bg};border-bottom:1px solid var(--line);">
             <td style="padding:9px 10px;">
-              <div style="font-weight:600;color:#1A1A1A;">${f.modelo}</div>
-              ${f.clave ? `<div style="font-size:10px;color:#AAA;">${f.clave}</div>` : ''}
+              <div style="font-weight:600;color:var(--ink);">${f.modelo}</div>
+              ${f.clave ? `<div style="font-size:10px;color:var(--ink-faint);">${f.clave}</div>` : ''}
             </td>
-            <td style="padding:9px 10px;text-align:center;color:#555;">
+            <td style="padding:9px 10px;text-align:center;color:var(--ink-soft);">
               <div style="font-weight:600;">${ult.folio}</div>
-              <div style="font-size:10px;color:#AAA;">${ult.fecha}</div>
+              <div style="font-size:10px;color:var(--ink-faint);">${ult.fecha}</div>
             </td>
             <td style="padding:9px 10px;text-align:right;font-weight:700;">
               ${simbolo(ult.moneda)}${ult.pvp.toLocaleString('es-MX',{minimumFractionDigits:2})}
@@ -3614,16 +3640,16 @@ async function seleccionarCliente(nombre) {
               ${ult.margen > 0 ? ult.margen.toFixed(1) + '%' : '—'}
             </td>
             <td style="padding:9px 10px;text-align:center;">
-              ${veces > 1 ? `<span style="background:#E8F4FD;color:#0C5460;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;">${veces}x</span>` : '—'}
+              ${veces > 1 ? `<span style="background:var(--sent-tint);color:var(--sent);font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;">${veces}x</span>` : '—'}
             </td>
             <td style="padding:9px 6px;text-align:center;">
-              <button onclick="verDetalle(${ult.cotId})" style="background:none;border:1px solid #DDD;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;color:#555;" title="Ver cotización completa">👁</button>
+              <button onclick="verDetalle(${ult.cotId})" style="background:none;border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;color:var(--ink-soft);" title="Ver cotización completa">👁</button>
             </td>
           </tr>`;
         }).join('')}
       </tbody>
     </table>
-    <div style="font-size:11px;color:#AAA;margin-top:8px;text-align:right;">${cots.length} cotización${cots.length > 1 ? 'es' : ''} · ${filas.length} producto${filas.length > 1 ? 's' : ''} distintos</div>
+    <div style="font-size:11px;color:var(--ink-faint);margin-top:8px;text-align:right;">${cots.length} cotización${cots.length > 1 ? 'es' : ''} · ${filas.length} producto${filas.length > 1 ? 's' : ''} distintos</div>
   `;
 
   histDiv.style.display = 'block';
@@ -4001,11 +4027,11 @@ function ocSiguienteNumero(lista) {
 
 async function ocGenerar(cotData) {
   const cot = cotData || modalCotizacion;
-  if (!cot || !Array.isArray(cot.productos)) { alert('No hay datos de cotización.'); return; }
+  if (!cot || !Array.isArray(cot.productos)) { mostrarToast('No hay datos de cotización.', 'error'); return; }
   const r = ocDesdeCotizacion(cot);
   if (!r.ocs.length) {
-    alert('Esta cotización no tiene productos CAPPA / BODEN / OneDecking (en el catálogo) para generar OC.' +
-          (r.pendientes.length ? ('\n\n' + r.pendientes.length + ' producto(s) sin catálogo o sin costo.') : ''));
+    mostrarToast('Esta cotización no tiene productos CAPPA / BODEN / OneDecking (en el catálogo) para generar OC.' +
+          (r.pendientes.length ? (' — ' + r.pendientes.length + ' producto(s) sin catálogo o sin costo.') : ''), 'error', 6000);
     return;
   }
   let numOrden = '';
@@ -4047,58 +4073,58 @@ function ocRenderModal() {
   }
   const m = ocActual.meta;
   const secciones = ocActual.ocs.map(oc => {
-    const filas = oc.renglones.map(r => `<tr style="border-top:1px solid #f0f0f0${r.provisional?';background:#FBF3DD':''}">
+    const filas = oc.renglones.map(r => `<tr style="border-top:1px solid var(--surface-2)${r.provisional?';background:var(--warn-tint)':''}">
       <td style="text-align:right;padding:5px 6px">${r.cantidad}</td>
       <td style="padding:5px 6px">${r.unidad==='CAJAS'?'cajas':'pza'}</td>
-      <td style="padding:5px 6px;font-family:monospace;font-size:11px">${r.clave}${r.provisional?' <span style="color:#B0851E" title="Clave provisional — confirmar antes de enviar">⚠</span>':''}</td>
+      <td style="padding:5px 6px;font-family:monospace;font-size:11px">${r.clave}${r.provisional?' <span style="color:var(--warn)" title="Clave provisional — confirmar antes de enviar">⚠</span>':''}</td>
       <td style="padding:5px 6px">${r.linea}${r.color?(' · '+r.color):''}</td>
       <td style="text-align:right;padding:5px 6px">${ocMoney(r.precioUnitario)}</td>
-      <td style="text-align:center;padding:5px 6px;color:#888">${r.descuentos.map(d=>Math.round(d*100)+'%').join('/')}</td>
+      <td style="text-align:center;padding:5px 6px;color:var(--ink-faint)">${r.descuentos.map(d=>Math.round(d*100)+'%').join('/')}</td>
       <td style="text-align:right;padding:5px 6px;font-weight:600">${ocMoney(r.subtotal)}</td></tr>`).join('');
-    return `<div style="border:1px solid #e8e8e8;border-radius:12px;padding:14px;margin-top:14px">
+    return `<div style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <strong style="font-size:15px">📦 ${oc.proveedor}</strong>
         <div style="display:flex;gap:6px">
-          <button onclick="ocCopiar('${oc.proveedor}')" style="background:none;border:1px solid #ddd;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer">Copiar</button>
-          <button onclick="ocDescargarExcel('${oc.proveedor}')" style="background:#1E6B3C;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer">⬇ Excel</button>
+          <button onclick="ocCopiar('${oc.proveedor}')" style="background:none;border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer">Copiar</button>
+          <button onclick="ocDescargarExcel('${oc.proveedor}')" style="background:var(--ok);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer">⬇ Excel</button>
         </div>
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead><tr style="color:#999;text-align:left;font-size:11px">
+        <thead><tr style="color:var(--ink-faint);text-align:left;font-size:11px">
           <th style="text-align:right;padding:4px 6px">Cant</th><th style="padding:4px 6px">Unidad</th><th style="padding:4px 6px">Clave</th><th style="padding:4px 6px">Línea / Color</th><th style="text-align:right;padding:4px 6px">P. Lista</th><th style="text-align:center;padding:4px 6px">Desc.</th><th style="text-align:right;padding:4px 6px">Subtotal</th></tr></thead>
         <tbody>${filas}</tbody>
       </table>
-      <div style="text-align:right;margin-top:8px;font-size:12px;color:#555">
-        Subtotal ${ocMoney(oc.subtotal)} · IVA 16% ${ocMoney(oc.iva)} · <strong style="color:#1A1A1A">Total USD ${ocMoney(oc.totalUSD)}</strong></div>
+      <div style="text-align:right;margin-top:8px;font-size:12px;color:var(--ink-soft)">
+        Subtotal ${ocMoney(oc.subtotal)} · IVA 16% ${ocMoney(oc.iva)} · <strong style="color:var(--ink)">Total USD ${ocMoney(oc.totalUSD)}</strong></div>
     </div>`;
   }).join('');
-  const pend = ocActual.pendientes.length ? `<div style="background:#FBF3DD;border:1px solid #E8C96B;border-radius:10px;padding:10px 12px;margin-top:14px;font-size:12px;color:#7a5a00">
+  const pend = ocActual.pendientes.length ? `<div style="background:var(--warn-tint);border:1px solid var(--warn);border-radius:10px;padding:10px 12px;margin-top:14px;font-size:12px;color:var(--warn)">
     ⚠️ <strong>${ocActual.pendientes.length} producto(s) omitido(s)</strong> (sin catálogo o sin costo): ${ocActual.pendientes.map(p=>(p.nombre||p.clave||'?')).join(', ')}. Si aplican, captúralos a mano en el Excel.</div>` : '';
   const provList = ocActual.ocs.flatMap(o => o.renglones).filter(r => r.provisional);
-  const provWarn = provList.length ? `<div style="background:#FDE8E8;border:1px solid #E4A0A0;border-radius:10px;padding:10px 12px;margin-top:14px;font-size:12px;color:#8A2A2A">
+  const provWarn = provList.length ? `<div style="background:var(--lost-tint);border:1px solid var(--lost);border-radius:10px;padding:10px 12px;margin-top:14px;font-size:12px;color:var(--lost)">
     ⚠️ <strong>Claves provisionales (${provList.length})</strong>: ${[...new Set(provList.map(r=>r.clave))].join(', ')}. Son molduras STONE con clave derivada — <strong>confírmalas contra la Lista No.08 STONE antes de enviar esta OC</strong> al proveedor.</div>` : '';
   const notaDeriv = '';
 
   host.innerHTML = `<div style="background:#fff;border-radius:16px;max-width:880px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
       <div><div style="font-weight:800;font-size:18px">Orden de compra a proveedor</div>
-        <div style="font-size:12px;color:#888">${m.folio} · ${ocActual.cot.cliente||''}</div></div>
-      <button onclick="ocCerrarModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa">&times;</button>
+        <div style="font-size:12px;color:var(--ink-faint)">${m.folio} · ${ocActual.cot.cliente||''}</div></div>
+      <button onclick="ocCerrarModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink-faint)">&times;</button>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:10px;background:#FAFAFA;border:1px solid #eee;border-radius:12px;padding:12px">
-      <label style="font-size:11px;color:#777">Nº de orden (consecutivo)<br><input value="${m.numOrden}" placeholder="escribe el primero" oninput="ocActual.meta.numOrden=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:130px"></label>
-      <label style="font-size:11px;color:#777">Fecha<br><input value="${m.fecha}" oninput="ocActual.meta.fecha=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:110px"></label>
-      <label style="font-size:11px;color:#777">Facturar a (tu razón social)<br><input value="${m.facturarA}" placeholder="Tecnoelementos…" oninput="ocActual.meta.facturarA=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:200px"></label>
-      <label style="font-size:11px;color:#777">Obra / ref. (opcional)<br><input value="${m.obra}" placeholder="sin cliente" oninput="ocActual.meta.obra=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:160px"></label>
-      <label style="font-size:11px;color:#777">Comprador<br><input value="${m.comprador}" oninput="ocActual.meta.comprador=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:150px"></label>
-      <label style="font-size:11px;color:#777">Tipo de cambio<br><input id="oc-tc" value="${m.tc}" oninput="ocActual.meta.tc=this.value" style="padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:13px;width:110px"></label>
-      <div style="flex-basis:100%;font-size:11px;color:#999" id="oc-tc-info">Cargando TC…</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px">
+      <label style="font-size:11px;color:var(--ink-soft)">Nº de orden (consecutivo)<br><input value="${m.numOrden}" placeholder="escribe el primero" oninput="ocActual.meta.numOrden=this.value" style="padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:130px"></label>
+      <label style="font-size:11px;color:var(--ink-soft)">Fecha<br><input value="${m.fecha}" oninput="ocActual.meta.fecha=this.value" style="padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:110px"></label>
+      <label style="font-size:11px;color:var(--ink-soft)">Facturar a (tu razón social)<br><input value="${m.facturarA}" placeholder="Tecnoelementos…" oninput="ocActual.meta.facturarA=this.value" style="padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:200px"></label>
+      <label style="font-size:11px;color:var(--ink-soft)">Obra / ref. (opcional)<br><input value="${m.obra}" placeholder="sin cliente" oninput="ocActual.meta.obra=this.value" style="padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:160px"></label>
+      <label style="font-size:11px;color:var(--ink-soft)">Comprador<br><input value="${m.comprador}" oninput="ocActual.meta.comprador=this.value" style="padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:150px"></label>
+      <label style="font-size:11px;color:var(--ink-soft)">Tipo de cambio<br><input id="oc-tc" value="${m.tc}" oninput="ocActual.meta.tc=this.value" style="padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:13px;width:110px"></label>
+      <div style="flex-basis:100%;font-size:11px;color:var(--ink-faint)" id="oc-tc-info">Cargando TC…</div>
     </div>
     ${secciones}
     ${provWarn}
     ${pend}
     ${notaDeriv}
-    <div style="text-align:right;margin-top:16px"><button onclick="ocCerrarModal()" style="background:none;border:1px solid #ddd;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer">Cerrar</button></div>
+    <div style="text-align:right;margin-top:16px"><button onclick="ocCerrarModal()" style="background:none;border:1px solid var(--line);border-radius:9px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer">Cerrar</button></div>
   </div>`;
 }
 
@@ -4125,7 +4151,7 @@ function ocCopiar(prov) {
   const tsv = [head, ...rows].map(a => a.join('\t')).join('\n');
   navigator.clipboard.writeText(tsv).then(() => {
     if (typeof mostrarToast === 'function') mostrarToast('OC ' + prov + ' copiada al portapapeles', 'success');
-  }).catch(() => alert('No se pudo copiar'));
+  }).catch(() => mostrarToast('No se pudo copiar', 'error'));
 }
 
 function ocEnsureXLSX(cb) {
@@ -4365,9 +4391,9 @@ function obraPct(parte, total) {
 }
 
 function obraEstado(pct) {
-  if (pct >= 100) return { txt:'Completo',  color:'#1E6B3C', bg:'#E3F4E9' };
-  if (pct > 0)    return { txt:'Parcial',   color:'#9A6B00', bg:'#FBF3DD' };
-  return            { txt:'Pendiente', color:'#8B2020', bg:'#FBE3E3' };
+  if (pct >= 100) return { txt:'Completo',  color:'var(--ok)', bg:'var(--ok-tint)' };
+  if (pct > 0)    return { txt:'Parcial',   color:'var(--warn)', bg:'var(--warn-tint)' };
+  return            { txt:'Pendiente', color:'var(--lost)', bg:'var(--lost-tint)' };
 }
 
 // Resumen global de una obra (para el semáforo y los stats)
@@ -4446,7 +4472,7 @@ async function obraActivar(folio) {
 }
 
 async function obraDesactivar(folio) {
-  if (!confirm('¿Retirar esta obra del seguimiento? El avance capturado se perderá.')) return;
+  if (!await confirmar('¿Retirar esta obra del seguimiento? El avance capturado se perderá.', 'Sí, retirar')) return;
   const lista = await getCotizaciones();
   const cot = lista.find(c => String(c.folio) === String(folio));
   if (!cot) return;
@@ -4496,10 +4522,10 @@ function obraVolumenDe(cot) {
 
 function obraEstadoUnidad(estado) {
   switch (obraNormalizarEstadoUnidad(estado)) {
-    case 'entregado': return { txt:'Entregado',  color:'#1E6B3C', bg:'#E3F4E9' }; // verde (firmado de conformidad)
-    case 'concluido': return { txt:'Concluido',  color:'#2E6BB8', bg:'#E4EEF9' }; // azul (terminado, sin firma)
-    case 'en_proceso':return { txt:'En proceso', color:'#9A6B00', bg:'#FBF3DD' }; // amarillo
-    default:          return { txt:'Sin iniciar',color:'#8B2020', bg:'#FBE3E3' }; // rojo
+    case 'entregado': return { txt:'Entregado',  color:'var(--ok)', bg:'var(--ok-tint)' }; // verde (firmado de conformidad)
+    case 'concluido': return { txt:'Concluido',  color:'var(--sent)', bg:'var(--sent-tint)' }; // azul (terminado, sin firma)
+    case 'en_proceso':return { txt:'En proceso', color:'var(--warn)', bg:'var(--warn-tint)' }; // amarillo
+    default:          return { txt:'Sin iniciar',color:'var(--lost)', bg:'var(--lost-tint)' }; // rojo
   }
 }
 
@@ -4585,7 +4611,7 @@ async function obraEliminarUnidad(folio, uid) {
 }
 
 async function obraVolumenLimpiar(folio) {
-  if (!confirm('¿Borrar todas las unidades del mapa de obra?')) return;
+  if (!await confirmar('¿Borrar todas las unidades del mapa de obra?', 'Sí, borrar')) return;
   const lista = await getCotizaciones();
   const cot = lista.find(c => String(c.folio) === String(folio));
   if (!cot || !cot.seguimiento) return;
@@ -4701,11 +4727,11 @@ async function obraIAAnalizar(folio) {
     obraIAResultado[folio] = data;
     const muestra = data.unidades.slice(0, 8).join(', ') + (data.unidades.length > 8 ? '…' : '');
     prev.innerHTML = `
-    <div style="background:#E3F4E9;border:1px solid #1E6B3C33;border-radius:8px;padding:10px 12px;font-size:12px">
+    <div style="background:var(--ok-tint);border:1px solid color-mix(in srgb, var(--ok) 25%, transparent);border-radius:8px;padding:10px 12px;font-size:12px">
       Detecté <strong>${data.unidades.length} × ${data.unidadLabel}</strong>: ${muestra}
       <div style="margin-top:8px;display:flex;gap:8px">
-        <button class="obra-btn" onclick="obraIAConfirmar('${folio}')" style="background:#1E6B3C;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">✓ Crear ${data.unidades.length} unidades</button>
-        <button onclick="document.getElementById('obra-ia-prev-${folio}').innerHTML=''" style="background:none;border:1px solid #ccc;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer">Descartar</button>
+        <button class="obra-btn" onclick="obraIAConfirmar('${folio}')" style="background:var(--ok);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">✓ Crear ${data.unidades.length} unidades</button>
+        <button onclick="document.getElementById('obra-ia-prev-${folio}').innerHTML=''" style="background:none;border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer">Descartar</button>
       </div>
     </div>`;
   } catch (e) {
@@ -4792,31 +4818,31 @@ function obraNivelHTML(folio, nivel, unidades, tieneNiv) {
   const filas = unidades.map(u => {
     const e = obraEstadoUnidad(u.estado);
     const nivPill = tieneNiv
-      ? `<button onclick="event.stopPropagation();obraToggleNivelacion('${folio}','${u.id}')" title="Nivelación ${u.nivelacion?'hecha':'pendiente'}" style="background:${u.nivelacion?'#E3F4E9':'#F4F4F4'};color:${u.nivelacion?'#1E6B3C':'#999'};border:1px solid ${u.nivelacion?'#1E6B3C33':'#ddd'};border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${u.nivelacion?'✓':'○'} Nivelación</button>`
+      ? `<button onclick="event.stopPropagation();obraToggleNivelacion('${folio}','${u.id}')" title="Nivelación ${u.nivelacion?'hecha':'pendiente'}" style="background:${u.nivelacion?'var(--ok-tint)':'var(--surface-2)'};color:${u.nivelacion?'var(--ok)':'var(--ink-faint)'};border:1px solid ${u.nivelacion?'color-mix(in srgb, var(--ok) 25%, transparent)':'var(--line)'};border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${u.nivelacion?'✓':'○'} Nivelación</button>`
       : '';
-    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-top:1px solid #F2F2F2;flex-wrap:wrap">
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-top:1px solid var(--surface-2);flex-wrap:wrap">
       <span ondblclick="this.contentEditable=true;this.focus()" onblur="this.contentEditable=false;obraRenombrarUnidad('${folio}','${u.id}',this.textContent)" style="font-size:13px;outline:none">${u.nombre}</span>
       <span style="display:flex;align-items:center;gap:8px">
         ${nivPill}
         <button onclick="obraCiclarUnidad('${folio}','${u.id}')" style="background:${e.bg};color:${e.color};border:1px solid ${e.color}33;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;min-width:100px">${e.txt}</button>
-        <span class="obra-chip-x" onclick="obraEliminarUnidad('${folio}','${u.id}')" style="color:#bbb;font-weight:700;cursor:pointer" title="Quitar">×</span>
+        <span class="obra-chip-x" onclick="obraEliminarUnidad('${folio}','${u.id}')" style="color:var(--ink-faint);font-weight:700;cursor:pointer" title="Quitar">×</span>
       </span>
     </div>`;
   }).join('');
 
-  const nivResumen = tieneNiv ? `<span style="font-size:11px;color:#888;white-space:nowrap">· Niv ${nivHechos}/${unidades.length}</span>` : '';
+  const nivResumen = tieneNiv ? `<span style="font-size:11px;color:var(--ink-faint);white-space:nowrap">· Niv ${nivHechos}/${unidades.length}</span>` : '';
   const nivBulk = tieneNiv
-    ? `<button onclick="event.stopPropagation();obraSetNivelacionNivel('${folio}','${enc}',${!todasNiv})" title="Marcar nivelación de todo el nivel" style="background:${todasNiv?'#E3F4E9':'#fff'};color:${todasNiv?'#1E6B3C':'#888'};border:1px solid ${todasNiv?'#1E6B3C':'#ddd'};border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex:none">${todasNiv?'✓':'○'} Niv</button>`
+    ? `<button onclick="event.stopPropagation();obraSetNivelacionNivel('${folio}','${enc}',${!todasNiv})" title="Marcar nivelación de todo el nivel" style="background:${todasNiv?'var(--ok-tint)':'#fff'};color:${todasNiv?'var(--ok)':'var(--ink-faint)'};border:1px solid ${todasNiv?'var(--ok)':'var(--line)'};border-radius:8px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex:none">${todasNiv?'✓':'○'} Niv</button>`
     : '';
 
   return `
-  <div style="border:1px solid #ECECEC;border-radius:10px;margin-bottom:8px;overflow:hidden">
-    <div onclick="obraToggleNivel('${folio}','${enc}')" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;cursor:pointer;background:#FAFAFA;flex-wrap:wrap">
+  <div style="border:1px solid var(--line);border-radius:10px;margin-bottom:8px;overflow:hidden">
+    <div onclick="obraToggleNivel('${folio}','${enc}')" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;cursor:pointer;background:var(--surface-2);flex-wrap:wrap">
       <span style="display:flex;align-items:center;gap:8px;min-width:0">
-        <span style="color:#bbb;font-size:13px">${open?'▾':'▸'}</span>
+        <span style="color:var(--ink-faint);font-size:13px">${open?'▾':'▸'}</span>
         <span style="width:9px;height:9px;border-radius:50%;background:${colNivel};flex:none"></span>
         <span style="font-weight:700;font-size:13px">${nivel || 'Unidades'}</span>
-        <span style="font-size:11px;color:#888;white-space:nowrap">${tally.entregado}/${unidades.length} entregados</span>
+        <span style="font-size:11px;color:var(--ink-faint);white-space:nowrap">${tally.entregado}/${unidades.length} entregados</span>
         ${nivResumen}
       </span>
       <span style="display:flex;align-items:center;gap:6px;flex:none">${nivBulk}${marcar}</span>
@@ -4831,8 +4857,8 @@ function obraMapaHTML(cot) {
 
   if (!vol.activo) {
     return `
-    <div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">
-      <button class="obra-btn" onclick="obraVolumenActivar('${folio}')" style="background:#F2F2F2;border:1px dashed #bbb;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:#555;cursor:pointer">🗺️ Es obra de volumen — dividir en niveles/departamentos</button>
+    <div style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px">
+      <button class="obra-btn" onclick="obraVolumenActivar('${folio}')" style="background:var(--surface-2);border:1px dashed var(--ink-faint);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer">🗺️ Es obra de volumen — dividir en niveles/departamentos</button>
     </div>`;
   }
 
@@ -4853,46 +4879,46 @@ function obraMapaHTML(cot) {
 
   const tieneNiv = obraLlevaNivelacion(cot);
   const unidadesHTML = total === 0
-    ? '<p style="font-size:12px;color:#aaa;margin:8px 0">Aún no hay unidades. Genera o agrega abajo.</p>'
+    ? '<p style="font-size:12px;color:var(--ink-faint);margin:8px 0">Aún no hay unidades. Genera o agrega abajo.</p>'
     : '<div style="margin:10px 0">' + claves.map(nv => obraNivelHTML(folio, nv, grupos[nv], tieneNiv)).join('') + '</div>';
 
   return `
-  <div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">
+  <div style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;flex-wrap:wrap">
-      <span style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px">🗺️ Mapa de obra</span>
-      <span style="font-size:12px;color:#555">${resumen || 'sin unidades'} <span style="color:#aaa">(${total})</span></span>
+      <span style="font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.5px">🗺️ Mapa de obra</span>
+      <span style="font-size:12px;color:var(--ink-soft)">${resumen || 'sin unidades'} <span style="color:var(--ink-faint)">(${total})</span></span>
     </div>
-    <div style="font-size:10.5px;color:#aaa;margin:-2px 0 8px">Toca un nivel para abrirlo. En cada depto, toca su estado para avanzarlo (Sin iniciar→En proceso→Concluido→Entregado). Los círculos del nivel marcan TODO el nivel de un toque.</div>
+    <div style="font-size:10.5px;color:var(--ink-faint);margin:-2px 0 8px">Toca un nivel para abrirlo. En cada depto, toca su estado para avanzarlo (Sin iniciar→En proceso→Concluido→Entregado). Los círculos del nivel marcan TODO el nivel de un toque.</div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
-      <label style="font-size:11px;color:#888">Dividir por:</label>
-      <select onchange="obraVolumenSetLabel('${folio}', this.value)" class="obra-input" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+      <label style="font-size:11px;color:var(--ink-faint)">Dividir por:</label>
+      <select onchange="obraVolumenSetLabel('${folio}', this.value)" class="obra-input" style="padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px">
         <option value="Nivel"        ${vol.unidadLabel==='Nivel'?'selected':''}>Nivel</option>
         <option value="Departamento" ${vol.unidadLabel==='Departamento'?'selected':''}>Departamento</option>
         <option value="Zona"         ${vol.unidadLabel==='Zona'?'selected':''}>Zona</option>
         <option value="Área"         ${vol.unidadLabel==='Área'?'selected':''}>Área</option>
       </select>
-      <input type="number" id="obra-gen-${folio}" min="1" max="500" placeholder="N°" class="obra-input" style="width:64px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
-      <button class="obra-btn" onclick="obraGenerarUnidades('${folio}')" style="background:#1A1A1A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Generar</button>
-      <button class="obra-btn" onclick="obraAgregarUnidad('${folio}')" style="background:none;border:1px solid #ccc;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer">+ 1</button>
-      ${total>0?`<button onclick="obraVolumenLimpiar('${folio}')" style="background:none;border:none;color:#bbb;font-size:11px;cursor:pointer;margin-left:auto">borrar todo</button>`:''}
+      <input type="number" id="obra-gen-${folio}" min="1" max="500" placeholder="N°" class="obra-input" style="width:64px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px">
+      <button class="obra-btn" onclick="obraGenerarUnidades('${folio}')" style="background:var(--ink);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Generar</button>
+      <button class="obra-btn" onclick="obraAgregarUnidad('${folio}')" style="background:none;border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer">+ 1</button>
+      ${total>0?`<button onclick="obraVolumenLimpiar('${folio}')" style="background:none;border:none;color:var(--ink-faint);font-size:11px;cursor:pointer;margin-left:auto">borrar todo</button>`:''}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
-      <input id="obra-desc-${folio}" placeholder='Captura rápida: ej. "20 niveles x 4 deptos" o "deptos 101-120"' class="obra-input" style="flex:1;min-width:200px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
-      <button class="obra-btn" onclick="obraCapturaTexto('${folio}')" style="background:#1A1A1A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">✨ Desde texto</button>
+      <input id="obra-desc-${folio}" placeholder='Captura rápida: ej. "20 niveles x 4 deptos" o "deptos 101-120"' class="obra-input" style="flex:1;min-width:200px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px">
+      <button class="obra-btn" onclick="obraCapturaTexto('${folio}')" style="background:var(--ink);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">✨ Desde texto</button>
     </div>
     <details style="margin-bottom:8px">
-      <summary style="font-size:11px;color:#888;cursor:pointer">o pegar una lista (uno por línea o separados por coma)</summary>
+      <summary style="font-size:11px;color:var(--ink-faint);cursor:pointer">o pegar una lista (uno por línea o separados por coma)</summary>
       <div style="display:flex;gap:8px;margin-top:6px">
-        <textarea id="obra-lista-${folio}" rows="3" placeholder="Depto 101, Depto 102, PH..." class="obra-input" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;resize:vertical"></textarea>
-        <button class="obra-btn" onclick="obraImportarLista('${folio}')" style="background:#1A1A1A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;align-self:flex-start">Importar</button>
+        <textarea id="obra-lista-${folio}" rows="3" placeholder="Depto 101, Depto 102, PH..." class="obra-input" style="flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;resize:vertical"></textarea>
+        <button class="obra-btn" onclick="obraImportarLista('${folio}')" style="background:var(--ink);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;align-self:flex-start">Importar</button>
       </div>
     </details>
     <details style="margin-bottom:8px">
-      <summary style="font-size:11px;color:#1E6B3C;font-weight:600;cursor:pointer">✨ Cargar con IA (foto del plano o descripción)</summary>
+      <summary style="font-size:11px;color:var(--ok);font-weight:600;cursor:pointer">✨ Cargar con IA (foto del plano o descripción)</summary>
       <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
         <input type="file" id="obra-ia-file-${folio}" accept="image/*" style="font-size:12px">
-        <textarea id="obra-ia-desc-${folio}" rows="2" placeholder="o describe: 'torre de 20 niveles, 4 deptos por piso, más 2 PH'" class="obra-input" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;resize:vertical"></textarea>
-        <button class="obra-btn" onclick="obraIAAnalizar('${folio}')" style="background:#1E6B3C;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;align-self:flex-start">✨ Analizar con IA</button>
+        <textarea id="obra-ia-desc-${folio}" rows="2" placeholder="o describe: 'torre de 20 niveles, 4 deptos por piso, más 2 PH'" class="obra-input" style="padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;resize:vertical"></textarea>
+        <button class="obra-btn" onclick="obraIAAnalizar('${folio}')" style="background:var(--ok);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;align-self:flex-start">✨ Analizar con IA</button>
         <div id="obra-ia-prev-${folio}" style="font-size:12px"></div>
       </div>
     </details>
@@ -4930,10 +4956,10 @@ function obraAtrasoBadge(finProg, finReal) {
   if (!finProg) return '';
   const d = Math.round((Date.parse(finReal || obraHoy()) - Date.parse(finProg)) / 86400000);
   const pill = (txt, color, bg) => `<span style="background:${bg};color:${color};padding:1px 8px;border-radius:9px;font-size:10px;font-weight:700;white-space:nowrap">${txt}</span>`;
-  if (finReal) return d <= 0 ? pill('entregó a tiempo','#1E6B3C','#E3F4E9') : pill('entregó '+d+'d tarde','#8B2020','#FBE3E3');
-  if (d > 0)   return pill('atrasada '+d+'d','#8B2020','#FBE3E3');
-  if (d === 0) return pill('vence hoy','#9A6B00','#FBF3DD');
-  return pill('faltan '+(-d)+'d','#1E6B3C','#E3F4E9');
+  if (finReal) return d <= 0 ? pill('entregó a tiempo','var(--ok)','var(--ok-tint)') : pill('entregó '+d+'d tarde','var(--lost)','var(--lost-tint)');
+  if (d > 0)   return pill('atrasada '+d+'d','var(--lost)','var(--lost-tint)');
+  if (d === 0) return pill('vence hoy','var(--warn)','var(--warn-tint)');
+  return pill('faltan '+(-d)+'d','var(--ok)','var(--ok-tint)');
 }
 
 async function obraSetFecha(folio, campo, val) {
@@ -4960,23 +4986,23 @@ async function obraSetFechaPartida(folio, tipo, campo, val) {
 function obraFechasObraHTML(cot) {
   const f = cot.seguimiento.fechas || {};
   return `
-  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:#FAFAFA;border-radius:8px">
-    <span style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px">📅 Fechas</span>
-    <label style="font-size:11px;color:#999;display:flex;align-items:center;gap:4px">Inicio prog <input type="date" value="${f.inicioProg||''}" onchange="obraSetFecha('${cot.folio}','inicioProg',this.value)" class="obra-fecha"></label>
-    <label style="font-size:11px;color:#999;display:flex;align-items:center;gap:4px">Fin prog <input type="date" value="${f.finProg||''}" onchange="obraSetFecha('${cot.folio}','finProg',this.value)" class="obra-fecha"></label>
-    <span style="font-size:11px;color:#888">Real: ${f.inicioReal||'—'} → ${f.finReal||'…'}</span>
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:var(--surface-2);border-radius:8px">
+    <span style="font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.5px">📅 Fechas</span>
+    <label style="font-size:11px;color:var(--ink-faint);display:flex;align-items:center;gap:4px">Inicio prog <input type="date" value="${f.inicioProg||''}" onchange="obraSetFecha('${cot.folio}','inicioProg',this.value)" class="obra-fecha"></label>
+    <label style="font-size:11px;color:var(--ink-faint);display:flex;align-items:center;gap:4px">Fin prog <input type="date" value="${f.finProg||''}" onchange="obraSetFecha('${cot.folio}','finProg',this.value)" class="obra-fecha"></label>
+    <span style="font-size:11px;color:var(--ink-faint)">Real: ${f.inicioReal||'—'} → ${f.finReal||'…'}</span>
     ${obraAtrasoBadge(f.finProg, f.finReal)}
   </div>`;
 }
 
 function obraFechasPartidaHTML(folio, tipo, obj) {
   return `
-  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:4px 0 2px;font-size:11px;color:#aaa">
+  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:4px 0 2px;font-size:11px;color:var(--ink-faint)">
     <span>📅 prog</span>
     <input type="date" value="${obj.inicioProg||''}" onchange="obraSetFechaPartida('${folio}','${tipo}','inicioProg',this.value)" class="obra-fecha">
     <span>→</span>
     <input type="date" value="${obj.finProg||''}" onchange="obraSetFechaPartida('${folio}','${tipo}','finProg',this.value)" class="obra-fecha">
-    ${(obj.inicioReal||obj.finReal) ? `<span style="color:#999">· real ${obj.inicioReal||'…'} → ${obj.finReal||'…'}</span>` : ''}
+    ${(obj.inicioReal||obj.finReal) ? `<span style="color:var(--ink-faint)">· real ${obj.inicioReal||'…'} → ${obj.finReal||'…'}</span>` : ''}
     ${obraAtrasoBadge(obj.finProg, obj.finReal)}
   </div>`;
 }
@@ -5037,7 +5063,7 @@ async function obraGenerarEstimacion(folio) {
 }
 
 async function obraEliminarEstimacion(folio) {
-  if (!confirm('¿Eliminar la última estimación?')) return;
+  if (!await confirmar('¿Eliminar la última estimación?', 'Sí, eliminar')) return;
   const lista = await getCotizaciones();
   const cot = lista.find(c => String(c.folio) === String(folio));
   if (!cot || !cot.seguimiento || !(cot.seguimiento.estimaciones||[]).length) return;
@@ -5070,7 +5096,7 @@ function obraEstimacionHTML(cot) {
 
   const filasConc = conceptos.map(c => `<tr>
       <td style="padding:4px 8px">${c.concepto}</td>
-      <td style="padding:4px 8px;text-align:right;color:#888">${fmt(c.contratado)}</td>
+      <td style="padding:4px 8px;text-align:right;color:var(--ink-faint)">${fmt(c.contratado)}</td>
       <td style="padding:4px 8px;text-align:right">${c.avancePct}%</td>
       <td style="padding:4px 8px;text-align:right;font-weight:600">${fmt(c.ejecutado)}</td>
     </tr>`).join('');
@@ -5078,19 +5104,19 @@ function obraEstimacionHTML(cot) {
   const filasEst = ests.length
     ? ests.map(e => `<tr>
         <td style="padding:3px 8px">Estimación ${e.num} · ${e.fecha}</td>
-        <td style="padding:3px 8px;text-align:right;color:#888" colspan="2">acum. ${fmt(e.montoAcumulado)}</td>
-        <td style="padding:3px 8px;text-align:right;font-weight:700;color:#1E6B3C">${fmt(e.montoPeriodo)}</td>
+        <td style="padding:3px 8px;text-align:right;color:var(--ink-faint)" colspan="2">acum. ${fmt(e.montoAcumulado)}</td>
+        <td style="padding:3px 8px;text-align:right;font-weight:700;color:var(--ok)">${fmt(e.montoPeriodo)}</td>
       </tr>`).join('')
-    : `<tr><td colspan="4" style="padding:6px 8px;color:#aaa;font-size:12px">Aún no generas estimaciones.</td></tr>`;
+    : `<tr><td colspan="4" style="padding:6px 8px;color:var(--ink-faint);font-size:12px">Aún no generas estimaciones.</td></tr>`;
 
   return `
-  <div style="margin-top:14px;border-top:1px dashed #eee;padding-top:12px">
+  <div style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
-      <span style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px">💵 Estimación</span>
-      <span style="font-size:12px;color:#555">Ejecutado a la fecha: <strong>${fmt(acum)}</strong> <span style="color:#aaa">de ${fmt(contratadoTotal)}</span></span>
+      <span style="font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.5px">💵 Estimación</span>
+      <span style="font-size:12px;color:var(--ink-soft)">Ejecutado a la fecha: <strong>${fmt(acum)}</strong> <span style="color:var(--ink-faint)">de ${fmt(contratadoTotal)}</span></span>
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px">
-      <thead><tr style="color:#888;font-size:10px;text-transform:uppercase;border-bottom:1px solid #eee">
+      <thead><tr style="color:var(--ink-faint);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--line)">
         <th style="text-align:left;padding:4px 8px;font-weight:600">Concepto</th>
         <th style="text-align:right;padding:4px 8px;font-weight:600">Contratado</th>
         <th style="text-align:right;padding:4px 8px;font-weight:600">% avance</th>
@@ -5098,13 +5124,13 @@ function obraEstimacionHTML(cot) {
       </tr></thead>
       <tbody>${filasConc}</tbody>
     </table>
-    <div style="background:#FAFAFA;border-radius:8px;padding:6px 4px;margin-bottom:10px">
+    <div style="background:var(--surface-2);border-radius:8px;padding:6px 4px;margin-bottom:10px">
       <table style="width:100%;border-collapse:collapse;font-size:12px"><tbody>${filasEst}</tbody></table>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <button class="obra-btn" onclick="event.stopPropagation();obraGenerarEstimacion('${cot.folio}')" style="background:#1E6B3C;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Generar estimación${porEstimar>0?` (${fmt(porEstimar)})`:''}</button>
-      <button class="obra-btn" onclick="event.stopPropagation();obraCopiarEstimacion('${cot.folio}')" style="background:none;border:1px solid #ccc;border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer">📋 Copiar para Excel</button>
-      ${ests.length?`<button onclick="event.stopPropagation();obraEliminarEstimacion('${cot.folio}')" style="background:none;border:none;color:#bbb;font-size:11px;cursor:pointer;margin-left:auto">eliminar última</button>`:''}
+      <button class="obra-btn" onclick="event.stopPropagation();obraGenerarEstimacion('${cot.folio}')" style="background:var(--ok);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Generar estimación${porEstimar>0?` (${fmt(porEstimar)})`:''}</button>
+      <button class="obra-btn" onclick="event.stopPropagation();obraCopiarEstimacion('${cot.folio}')" style="background:none;border:1px solid var(--line);border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer">📋 Copiar para Excel</button>
+      ${ests.length?`<button onclick="event.stopPropagation();obraEliminarEstimacion('${cot.folio}')" style="background:none;border:none;color:var(--ink-faint);font-size:11px;cursor:pointer;margin-left:auto">eliminar última</button>`:''}
     </div>
   </div>`;
 }
@@ -5147,7 +5173,7 @@ function obraFilaCompactaHTML(cot) {
   const s = cot.seguimiento;
   const res = obraResumen(cot);
   const open = obraExpandidas.has(String(folio));
-  const gColor = res.estadoGlobal==='completo' ? '#1E6B3C' : res.estadoGlobal==='pendiente' ? '#8B2020' : '#9A6B00';
+  const gColor = res.estadoGlobal==='completo' ? 'var(--ok)' : res.estadoGlobal==='pendiente' ? 'var(--lost)' : 'var(--warn)';
 
   // "qué falta" — partidas con avance < 100
   const faltan = [];
@@ -5161,7 +5187,7 @@ function obraFilaCompactaHTML(cot) {
     });
   }
   const faltaTxt = faltan.length ? ('Falta: ' + faltan.slice(0,3).join(', ') + (faltan.length>3?'…':'')) : 'Lista para entregar';
-  const faltaColor = faltan.length ? '#888' : '#1E6B3C';
+  const faltaColor = faltan.length ? 'var(--ink-faint)' : 'var(--ok)';
   const atraso = obraAtrasoBadge((s.fechas||{}).finProg, (s.fechas||{}).finReal);
 
   return `
@@ -5170,7 +5196,7 @@ function obraFilaCompactaHTML(cot) {
       <span style="font-weight:700;font-size:14px">${cot.cliente||'—'}</span>
       <span style="font-size:18px;font-weight:700;color:${gColor};flex:none">${res.avgPct}%</span>
     </div>
-    <div style="font-size:12px;color:#888;margin-bottom:8px">TEC-${String(folio).padStart(4,'0')} · ${cot.proyecto || cot.ciudad || 'Sin proyecto'}</div>
+    <div style="font-size:12px;color:var(--ink-faint);margin-bottom:8px">TEC-${String(folio).padStart(4,'0')} · ${cot.proyecto || cot.ciudad || 'Sin proyecto'}</div>
     <div class="obra-bar-track" style="height:7px"><div class="obra-bar-fill" style="background:${gColor};width:${res.avgPct}%"></div></div>
     <div style="margin-top:8px;font-size:11px;color:${faltaColor};display:flex;align-items:center;gap:6px;flex-wrap:wrap">${faltan.length?'⚠️':'✓'} ${faltaTxt} ${atraso}</div>
   </div>`;
@@ -5183,7 +5209,7 @@ function obraBarraHTML(label, pct, est, rightHTML, extraHTML) {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;gap:10px;flex-wrap:wrap">
       <span style="font-size:13px;font-weight:600">${label}</span>
       <span style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:12px;color:#666">${rightHTML}</span>
+        <span style="font-size:12px;color:var(--ink-soft)">${rightHTML}</span>
         <span class="obra-badge" style="background:${est.bg};color:${est.color};padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap">${est.txt}</span>
       </span>
     </div>
@@ -5276,7 +5302,7 @@ function obraQuickSuministro(folio, cot) {
     <button class="obra-qbtn${pct===0?' on':''}" onclick="obraSetSuministroPct('${folio}',0)">0</button>
     <button class="obra-qbtn${pct===50?' on':''}" onclick="obraSetSuministroPct('${folio}',50)">½</button>
     <button class="obra-qbtn${pct===100?' on':''}" onclick="obraSetSuministroPct('${folio}',100)">Completo</button>
-    <input type="number" min="0" max="100" step="1" value="${pct}" onchange="obraSetSuministroPct('${folio}',this.value)" class="obra-input" style="width:70px;padding:8px 6px;border:1px solid #ddd;border-radius:9px;font-size:13px;text-align:right" title="% exacto entregado"> %
+    <input type="number" min="0" max="100" step="1" value="${pct}" onchange="obraSetSuministroPct('${folio}',this.value)" class="obra-input" style="width:70px;padding:8px 6px;border:1px solid var(--line);border-radius:9px;font-size:13px;text-align:right" title="% exacto entregado"> %
   </div>`;
 }
 
@@ -5317,53 +5343,53 @@ function obraSuministroEntregasHTML(cot) {
     }).join('');
     html += '</div>';
   } else {
-    html += '<div style="margin-top:8px;font-size:12px;color:#999">Esta cotización no tiene artículos de suministro.</div>';
+    html += '<div style="margin-top:8px;font-size:12px;color:var(--ink-faint)">Esta cotización no tiene artículos de suministro.</div>';
   }
 
   if (!draft && arts.length) {
     html += `<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-      <button onclick="obraEntregaIniciar('${folio}')" style="background:#1E6B3C;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">➕ Registrar entrega</button>
-      ${pct<100?`<button onclick="obraEntregarTodo('${folio}')" style="background:none;border:1px solid #ddd;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:600;color:#555;cursor:pointer">✓ Entregar todo lo faltante</button>`:''}
+      <button onclick="obraEntregaIniciar('${folio}')" style="background:var(--ok);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">➕ Registrar entrega</button>
+      ${pct<100?`<button onclick="obraEntregarTodo('${folio}')" style="background:none;border:1px solid var(--line);border-radius:9px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer">✓ Entregar todo lo faltante</button>`:''}
     </div>`;
   } else if (draft) {
-    html += `<div style="margin-top:12px;border:1px solid #e3e3e3;border-radius:11px;padding:12px;background:#FAFAFA">
+    html += `<div style="margin-top:12px;border:1px solid var(--line);border-radius:11px;padding:12px;background:var(--surface-2)">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
         <span style="font-size:12px;font-weight:700">Nueva entrega</span>
-        <input type="date" value="${draft.fecha}" onchange="obraEntregaSetFecha('${folio}',this.value)" style="padding:6px 8px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+        <input type="date" value="${draft.fecha}" onchange="obraEntregaSetFecha('${folio}',this.value)" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:12px">
       </div>
       <div style="display:flex;flex-direction:column;gap:7px">`;
     html += arts.map(a => {
       const ent = acc[a.idx] || 0, falta = Math.round((a.contratado - ent)*100)/100;
       const val = draft.items[a.idx] != null ? draft.items[a.idx] : '';
       return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px" title="${a.nombre}">${a.nombre} <span style="color:#aaa">(falta ${num(falta)} ${a.unidad})</span></span>
-        <input type="number" min="0" step="0.01" value="${val}" placeholder="0" onchange="obraEntregaSetItem('${folio}',${a.idx},this.value)" style="width:90px;padding:7px 6px;border:1px solid #ddd;border-radius:8px;font-size:12px;text-align:right">
+        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px" title="${a.nombre}">${a.nombre} <span style="color:var(--ink-faint)">(falta ${num(falta)} ${a.unidad})</span></span>
+        <input type="number" min="0" step="0.01" value="${val}" placeholder="0" onchange="obraEntregaSetItem('${folio}',${a.idx},this.value)" style="width:90px;padding:7px 6px;border:1px solid var(--line);border-radius:8px;font-size:12px;text-align:right">
       </div>`;
     }).join('');
     html += `</div>
-      <input type="text" value="${(draft.nota||'').replace(/"/g,'&quot;')}" placeholder="Nota / remisión (opcional)" onchange="obraEntregaSetNota('${folio}',this.value)" style="width:100%;box-sizing:border-box;margin-top:9px;padding:7px 9px;border:1px solid #ddd;border-radius:8px;font-size:12px">
+      <input type="text" value="${(draft.nota||'').replace(/"/g,'&quot;')}" placeholder="Nota / remisión (opcional)" onchange="obraEntregaSetNota('${folio}',this.value)" style="width:100%;box-sizing:border-box;margin-top:9px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:12px">
       <div style="display:flex;gap:6px;margin-top:10px">
-        <button onclick="obraEntregaGuardar('${folio}')" style="background:#1E6B3C;color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">Guardar entrega</button>
-        <button onclick="obraEntregaCancelar('${folio}')" style="background:none;border:1px solid #ddd;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:600;color:#777;cursor:pointer">Cancelar</button>
+        <button onclick="obraEntregaGuardar('${folio}')" style="background:var(--ok);color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">Guardar entrega</button>
+        <button onclick="obraEntregaCancelar('${folio}')" style="background:none;border:1px solid var(--line);border-radius:9px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer">Cancelar</button>
       </div>
     </div>`;
   }
 
   if (entregas.length) {
     const ordenadas = entregas.slice().sort((x,y)=> (x.fecha < y.fecha ? 1 : -1));
-    html += '<div style="margin-top:12px"><div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Historial de entregas</div>';
+    html += '<div style="margin-top:12px"><div style="font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Historial de entregas</div>';
     html += ordenadas.map(e => {
       const resumen = Object.keys(e.items||{}).map(k => {
         const a = arts.find(x => String(x.idx) === String(k));
         return `${num(e.items[k])} ${a?a.unidad:''} ${a?a.nombre:('art '+k)}`;
       }).join(' · ');
-      return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:12px">
+      return `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--surface-2);font-size:12px">
         <div style="flex:1;min-width:0">
           <span style="font-weight:600">${obraFechaCorta(e.fecha)}</span>
-          <span style="color:#666"> — ${resumen}</span>
-          ${e.nota?`<div style="color:#999;font-size:11px">${e.nota}</div>`:''}
+          <span style="color:var(--ink-soft)"> — ${resumen}</span>
+          ${e.nota?`<div style="color:var(--ink-faint);font-size:11px">${e.nota}</div>`:''}
         </div>
-        <button onclick="obraEliminarEntrega('${folio}','${e.id}')" style="background:none;border:none;color:#c66;font-size:11px;cursor:pointer;white-space:nowrap">eliminar</button>
+        <button onclick="obraEliminarEntrega('${folio}','${e.id}')" style="background:none;border:none;color:var(--lost);font-size:11px;cursor:pointer;white-space:nowrap">eliminar</button>
       </div>`;
     }).join('');
     html += '</div>';
@@ -5386,13 +5412,13 @@ function obraAvanceHTML(cot) {
       html += `
       <div class="obra-av-row">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:14px;font-weight:600">🔧 Mano de obra <span style="font-size:11px;color:#aaa;font-weight:400">(${labels})</span></span>
+          <span style="font-size:14px;font-weight:600">🔧 Mano de obra <span style="font-size:11px;color:var(--ink-faint);font-weight:400">(${labels})</span></span>
           <span style="font-size:13px;color:${est.color};font-weight:700">${mapaPct}%</span>
         </div>
         <div class="obra-bar-track" style="margin-top:8px"><div class="obra-bar-fill" style="background:${est.color};width:${mapaPct}%"></div></div>
-        <div style="margin-top:8px;font-size:11px;color:#888;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="margin-top:8px;font-size:11px;color:var(--ink-faint);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           Se calcula del avance de las unidades.
-          <button onclick="obraSetTab('${folio}','mapa')" style="background:none;border:1px solid #ddd;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;color:#555;cursor:pointer">Ir al Mapa →</button>
+          <button onclick="obraSetTab('${folio}','mapa')" style="background:none;border:1px solid var(--line);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;color:var(--ink-soft);cursor:pointer">Ir al Mapa →</button>
         </div>
       </div>`;
     } else {
@@ -5418,14 +5444,14 @@ function obraAvanceHTML(cot) {
 function obraVolumenCTA(folio) {
   return `
   <div style="margin-top:14px;text-align:center">
-    <button onclick="obraVolumenActivar('${folio}').then(()=>obraSetTab('${folio}','mapa'))" style="background:#F2F2F2;border:1px dashed #bbb;border-radius:10px;padding:10px 16px;font-size:12px;font-weight:600;color:#555;cursor:pointer">🗺️ ¿Es obra de volumen? Activar mapa por niveles/departamentos</button>
+    <button onclick="obraVolumenActivar('${folio}').then(()=>obraSetTab('${folio}','mapa'))" style="background:var(--surface-2);border:1px dashed var(--ink-faint);border-radius:10px;padding:10px 16px;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer">🗺️ ¿Es obra de volumen? Activar mapa por niveles/departamentos</button>
   </div>`;
 }
 
 function obraFechasTabHTML(cot) {
   const s = cot.seguimiento, folio = cot.folio;
   let html = obraFechasObraHTML(cot);
-  html += '<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px">Fechas por partida</div>';
+  html += '<div style="font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px">Fechas por partida</div>';
   html += '<div style="font-size:13px;font-weight:600;margin-bottom:2px">📦 Suministro</div>' + obraFechasPartidaHTML(folio, 'suministro', s.suministro);
   Object.keys(s.manoObra || {}).forEach(t => {
     const tipo = OBRA_TIPOS.find(x => x.key === t) || { label:t, icon:'🔧' };
@@ -5437,7 +5463,7 @@ function obraFechasTabHTML(cot) {
 function obraCardHTML(cot) {
   const s = cot.seguimiento, folio = cot.folio;
   const res = obraResumen(cot);
-  const gColor = res.estadoGlobal==='completo' ? '#1E6B3C' : res.estadoGlobal==='pendiente' ? '#8B2020' : '#9A6B00';
+  const gColor = res.estadoGlobal==='completo' ? 'var(--ok)' : res.estadoGlobal==='pendiente' ? 'var(--lost)' : 'var(--warn)';
   const gTxt   = res.estadoGlobal==='completo' ? 'Completa' : res.estadoGlobal==='pendiente' ? 'Por iniciar' : 'En proceso';
   const esVol = !!(s.volumen && s.volumen.activo);
   const tab = obraTab[String(folio)] || 'avance';
@@ -5459,11 +5485,11 @@ function obraCardHTML(cot) {
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:12px">
       <div>
         <div style="font-weight:700;font-size:15px">${cot.cliente||'—'}</div>
-        <div style="font-size:12px;color:#888">TEC-${String(folio).padStart(4,'0')} · ${cot.proyecto || cot.ciudad || 'Sin proyecto'}</div>
+        <div style="font-size:12px;color:var(--ink-faint)">TEC-${String(folio).padStart(4,'0')} · ${cot.proyecto || cot.ciudad || 'Sin proyecto'}</div>
       </div>
       <div style="text-align:right">
         <span class="obra-pill" style="background:${gColor};color:#fff;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap">${gTxt} · ${res.avgPct}%</span>
-        <div><button class="obra-retirar" onclick="obraDesactivar('${folio}')" style="background:none;border:none;color:#bbb;font-size:11px;cursor:pointer;margin-top:6px">retirar</button></div>
+        <div><button class="obra-retirar" onclick="obraDesactivar('${folio}')" style="background:none;border:none;color:var(--ink-faint);font-size:11px;cursor:pointer;margin-top:6px">retirar</button></div>
       </div>
     </div>
     ${tabBar}
@@ -5515,12 +5541,12 @@ async function renderObra() {
       const m2 = obraSuministroContratado(c);
       const tipos = Object.keys(obraDetectarManoObra(c)).map(t => (OBRA_TIPOS.find(x=>x.key===t)||{label:t}).label);
       return `
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid #ECECEC;border-radius:10px;padding:12px 14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px">
         <div style="min-width:0">
           <div style="font-weight:700;font-size:14px">${c.cliente||'—'}</div>
-          <div style="font-size:12px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">TEC-${String(c.folio).padStart(4,'0')} · ${c.proyecto||c.ciudad||'Sin proyecto'} · ${m2?m2.toLocaleString('es-MX')+' m²':'sin m²'}${tipos.length?' · '+tipos.join(', '):''}</div>
+          <div style="font-size:12px;color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">TEC-${String(c.folio).padStart(4,'0')} · ${c.proyecto||c.ciudad||'Sin proyecto'} · ${m2?m2.toLocaleString('es-MX')+' m²':'sin m²'}${tipos.length?' · '+tipos.join(', '):''}</div>
         </div>
-        <button class="obra-btn" style="background:#1A1A1A;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;flex:none" onclick="obraActivar('${c.folio}')">+ Activar</button>
+        <button class="obra-btn" style="background:var(--ink);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;flex:none" onclick="obraActivar('${c.folio}')">+ Activar</button>
       </div>`;
     }).join('');
   }
@@ -5531,7 +5557,7 @@ async function renderObra() {
 // ═══════════════════ GENERAR ORDEN DE COMPRA ═══════════════════
 async function generarOC(cotData) {
   const datos = cotData || recopilarDatos();
-  if (!datos.cliente) { alert('No hay datos de cotización'); return; }
+  if (!datos.cliente) { mostrarToast('No hay datos de cotización', 'error'); return; }
 
   // Filtrar solo productos BODEN y CAPPA
   const productosOC = (datos.productos || []).filter(p => {
@@ -5545,7 +5571,7 @@ async function generarOC(cotData) {
   });
 
   if (productosOC.length === 0) {
-    alert('No hay productos BODEN o CAPPA en esta cotización para generar OC.');
+    mostrarToast('No hay productos BODEN o CAPPA en esta cotización para generar OC.', 'error', 5000);
     return;
   }
 
