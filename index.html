@@ -1911,13 +1911,17 @@ function recopilarDatos() {
   const flete_monto_val = parseFloat(document.getElementById('flete-monto')?.value) || 0;
   const flete_cobrado2  = fleteEsc === 'cobrado';
   const flete_base      = flete_cobrado2 ? flete_monto_val : 0;
+  // El descuento entra ANTES del IVA — misma fórmula que recalcular() muestra
+  // en pantalla; si no, lo guardado (y el PDF) salía sin descuento.
+  const descPctRD       = parseFloat(document.getElementById('descuento-pct')?.value || 0) / 100;
+  const descMontoRD     = (subtotal + flete_base) * descPctRD;
   const conIvaProdRD   = (document.getElementById('prod-iva')?.value !== 'sin');
-  const iva             = conIvaProdRD ? (subtotal + flete_base) * 0.16 : 0;
+  const iva             = conIvaProdRD ? (subtotal + flete_base - descMontoRD) * 0.16 : 0;
   const instServicios   = recopilarInstalacion();
   const instSub         = instServicios.reduce((s,i) => s + i.total, 0);
   const instConIva      = (document.getElementById('inst-iva')?.value === 'con');
   const ivaInst         = instConIva ? instSub * 0.16 : 0;
-  const total           = subtotal + flete_base + iva + instSub + ivaInst;
+  const total           = subtotal + flete_base - descMontoRD + iva + instSub + ivaInst;
 
   return {
     folio:       currentFolio,
